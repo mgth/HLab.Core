@@ -27,13 +27,13 @@ namespace HLab.Mvvm.Annotations;
 
 public abstract class ViewMode { }
 public class DefaultViewMode : ViewMode { }
-public class DetailViewMode : DefaultViewMode { }
-public class EditViewMode : DefaultViewMode { }
-public class SummaryViewMode : DefaultViewMode { }
-public class StringViewMode : DefaultViewMode { }
-public class ListViewMode : DefaultViewMode { }
-public class PreviewViewMode : DefaultViewMode { }
-public class CollapsedViewMode : DefaultViewMode { }
+public class DetailViewMode : ViewMode { }
+public class EditViewMode : ViewMode { }
+public class SummaryViewMode : ViewMode { }
+public class StringViewMode : ViewMode { }
+public class ListViewMode : ViewMode { }
+public class PreviewViewMode : ViewMode { }
+public class CollapsedViewMode : ViewMode { }
 
 public class DocumentViewMode : ViewMode { }
 public class DraggableViewMode : ViewMode { }
