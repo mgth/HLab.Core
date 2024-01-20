@@ -30,16 +30,12 @@ public static partial class PhysicalMonitorEnumerationApi
     {
         uint pdwNumberOfPhysicalMonitors = 0;
 
-        if (GetNumberOfPhysicalMonitorsFromHMONITOR(hMonitor, ref pdwNumberOfPhysicalMonitors))
-        {
-            var pPhysicalMonitorArray = new PhysicalMonitor[pdwNumberOfPhysicalMonitors];
+        if (!GetNumberOfPhysicalMonitorsFromHMONITOR(hMonitor, ref pdwNumberOfPhysicalMonitors)) return [];
 
-            if (GetPhysicalMonitorsFromHMONITOR(hMonitor, pdwNumberOfPhysicalMonitors, pPhysicalMonitorArray))
-            {
-                return pPhysicalMonitorArray;
-            }
-        }
+        var pPhysicalMonitorArray = new PhysicalMonitor[pdwNumberOfPhysicalMonitors];
 
-        return null;
+        if (!GetPhysicalMonitorsFromHMONITOR(hMonitor, pdwNumberOfPhysicalMonitors, pPhysicalMonitorArray)) return [];
+
+        return pPhysicalMonitorArray;
     }
 }
