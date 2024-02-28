@@ -15,14 +15,15 @@ public class Segment
 
     public Rect Rect => new Rect(A, B);
 
-    public double Size
+    public double Size => Math.Sqrt(LengthSquared);
+
+    public double LengthSquared
     {
         get
         {
-            Rect r = Rect;
-            return Math.Sqrt(r.Width * r.Width + r.Height * r.Height);
+            var r = Rect;
+            return r.Width * r.Width  + r.Height * r.Height;
         }
-
     }
 
     public Point? Intersect(Line l)
