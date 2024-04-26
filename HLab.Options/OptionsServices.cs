@@ -16,7 +16,7 @@ public class OptionsServices : IOptionsService
         _providers.Add(provider);
     }
 
-    public string OptionsPath { get; set; }
+    public string OptionsPath { get; set; } = "";
     public StreamReader GetOptionFileReader(string name)
     {
         var fileName = Path.Combine(Environment.GetFolderPath(
