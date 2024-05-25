@@ -10,12 +10,12 @@ namespace HLab.Remote;
 
 public class RemoteClientSocket(string hostname, int port) : IRemoteClient
 {
-    TcpClient? _client;
-    public bool IsConnected => _client?.Connected??false;
     public event EventHandler<string>? MessageReceived;
     public event EventHandler? Connected;
     public event EventHandler? ConnectionFailed;
     public bool Stopping { get; set; } = false;
+
+    CancellationTokenSource _token = new();
 
     public void Listen()
     {
@@ -26,16 +26,22 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
     {
         while (!Stopping)
         {
+            TcpClient? client = null;
             //if client is not connected, try to connect
-            while (_client is null || !_client.Connected)
+            while (client is not { Connected: true })
             {
                 var wait = 50;
                 while (!Stopping)
                 {
                     try
                     {
-                        _client = new TcpClient(hostname, port);
-                        if (_client.Connected)
+                        if (client is not null)
+                        {
+                            client.Close();
+                            client.Dispose();
+                        }
+                        client = new TcpClient(hostname, port);
+                        if (client.Connected)
                         {
                             Connected?.Invoke(this, EventArgs.Empty);
                             break;
@@ -49,26 +55,35 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
                     {
                         ConnectionFailed?.Invoke(this, EventArgs.Empty);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
 
                     }
 
-                    if (wait>0) Thread.Sleep(wait);
-                    if (wait<10000) wait *= 2;
+                    if (wait > 0) Thread.Sleep(wait);
+                    if (wait < 10000) wait *= 2;
                 }
             }
 
-            if (_client is null) continue;
+            if (client is null) continue;
 
-            using (var reader = new StreamReader(_client.GetStream()))
+            var stream = client.GetStream();
+
+            using (var writer = new StreamWriter(stream))
+            using (var reader = new StreamReader(stream))
             {
-                while (_client.Connected)
+
+                writer.AutoFlush = true;
+                writer.WriteLine("""<CommandMessage Command="Listen" Payload=""/>""");
+
+                while (client.Connected)
                 {
                     try
                     {
                         var msg = reader.ReadLine();
-                        if (msg != null) MessageReceived?.Invoke(this, msg);
+
+                        if (msg != null)
+                            _ = Task.Run(() => MessageReceived?.Invoke(this, msg));
                     }
                     catch (ObjectDisposedException)
                     {
@@ -86,25 +101,30 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
 
             }
 
-            MessageReceived?.Invoke(this,"<DaemonMessage><State>Dead</State></DaemonMessage>\n");
+            MessageReceived?.Invoke(this, "<DaemonMessage><State>Dead</State></DaemonMessage>\n");
         }
     }
 
     async Task<bool> TrySendMessageAsync(string message, CancellationToken token)
     {
-        if (_client is null) return false;
+        try
+        {
+            using (var client = new TcpClient(hostname, port))
+            {
+                await using (var w = new StreamWriter(client.GetStream()))
+                {
+                    w.AutoFlush = true;
+                    var sb = new StringBuilder(message);
 
-        await using var w = new StreamWriter(_client.GetStream());
-
-        var sb = new StringBuilder(message+'\n');
-
-        await w.WriteAsync(sb,token);
-
-#if NET8_0_OR_GREATER
-        await w.FlushAsync(token);
-#else
-            await w.FlushAsync();
-#endif
+                    await w.WriteLineAsync(sb.ToString());
+                    client.Close();
+                };
+            };
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
         return true;
     }
 
@@ -116,7 +136,7 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
         {
             try
             {
-                if(await TrySendMessageAsync(message, token))
+                if (await TrySendMessageAsync(message, token))
                     return;
             }
             catch (Exception ex)
