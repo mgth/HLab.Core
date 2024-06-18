@@ -1,6 +1,6 @@
 ﻿namespace HLab.Base;
 
-public static class TextExtentions
+public static class TextExtensions
 {
     public static string ApplySymbols(this string s)
     {

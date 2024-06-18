@@ -20,7 +20,7 @@
 	  mailto:mathieu@mgth.fr
 	  http://www.mgth.fr
 */
-namespace HLab.Base.Extentions;
+namespace HLab.Base.Extensions;
 
 public static class DoubleExt
 {

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace HLab.Remote
 {
-    public static class RemoteExtentions
+    public static class RemoteExtensions
     {
         public static async Task<string> ReadMessageAsync(this PipeStream stream)
         {

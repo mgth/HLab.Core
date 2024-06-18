@@ -2,7 +2,7 @@
 
 namespace HLab.ColorTools;
 
-public static class ColorCorrectionRgbExtentions
+public static class ColorCorrectionRgbExtensions
 {
     public static ColorRGB<T> Multiply<T>(this ColorRGB<T> c, T value) where T : INumber<T>
         => new(c.Alpha, c.Red * value, c.Green * value, c.Blue * value);
