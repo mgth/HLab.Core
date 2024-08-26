@@ -9,12 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Avalonia" Version="11.1.3" />
-	  <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\HLab.Avalonia\HLab.Base.Avalonia\HLab.Base.Avalonia.csproj" />
+    <ProjectReference Include="..\HLab.Base.ReactiveUI\HLab.Base.ReactiveUI.csproj" />
     <ProjectReference Include="..\HLab.Mvvm.Annotations\HLab.Mvvm.Annotations.csproj" />
     <ProjectReference Include="..\HLab.Mvvm\HLab.Mvvm.csproj" />
   </ItemGroup>

@@ -23,7 +23,7 @@
 
 
 using System.Runtime.CompilerServices;
-using HLab.Base.Avalonia;
+using HLab.Base.ReactiveUI;
 using HLab.Mvvm.Annotations;
 using ReactiveUI;
 
