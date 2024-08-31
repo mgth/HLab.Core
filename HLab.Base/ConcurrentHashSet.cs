@@ -1,40 +1,36 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
 namespace HLab.Base;
 
-public class ConcurrentHashSet<T> : IDisposable
+
+
+
+public class ConcurrentHashSet<T> : IDisposable, IReadOnlyCollection<T>
 {
     readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
-    readonly HashSet<T> _hashSet = new HashSet<T>();
+    readonly HashSet<T> _hashSet = [];
 
-    public List<T> ToList()
+    public IEnumerator<T> GetEnumerator() => _hashSet.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    #region Implementation of ICollection<T> ...ish
+    public bool Add(T item)
     {
         _lock.EnterReadLock();
         try
         {
-            var l = new List<T>();
-            foreach(var i in _hashSet)
-                l.Add(i);
-
-            return l;
+            if(_hashSet.Contains(item)) return false;
         }
         finally
         {
             if (_lock.IsReadLockHeld) _lock.ExitReadLock();
         }
-
-    }
-
-
-    #region Implementation of ICollection<T> ...ish
-    public bool Add(T item)
-    {
         _lock.EnterWriteLock();
         try
         {
-
             return _hashSet.Add(item);
         }
         finally
@@ -145,6 +141,8 @@ public class ConcurrentHashSet<T> : IDisposable
             _lock?.Dispose();
         }
     }
+
+
     ~ConcurrentHashSet()
     {
         Dispose(false);
