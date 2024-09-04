@@ -24,12 +24,12 @@
 using HLab.Core.ReactiveUI;
 using System;
 
-namespace HLab.Notify.PropertyChanged;
+namespace HLab.Core;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class PersistentAttribute : Attribute
 {
-    public  Persistency Persistency { get; } 
+    public Persistency Persistency { get; }
     public PersistentAttribute(Persistency persistency)
     {
         Persistency = persistency;

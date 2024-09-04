@@ -1,15 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+        <TargetFramework>net8.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <Configurations>Debug;Release;DebugRelease</Configurations>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="ReactiveUI" Version="19.4.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HLab.Core.ReactiveUI\HLab.Core.ReactiveUI.csproj" />

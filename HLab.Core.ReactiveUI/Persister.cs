@@ -4,7 +4,6 @@ using System.Reflection;
 using ReactiveUI;
 
 using HLab.Base;
-using HLab.Notify.PropertyChanged;
 
 namespace HLab.Core.ReactiveUI;
 
