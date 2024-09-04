@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using HLab.Core.Annotations;
 using HLab.Mvvm.Annotations;
 using HLab.Mvvm.Application.Menus;
@@ -48,10 +49,10 @@ namespace HLab.Mvvm.Application
 
 
 
-        public virtual void Load(IBootContext b)
+        public async Task LoadAsync(IBootContext bootstrapper)
         {
-            if (b.WaitDependency("LocalizeBootloader")) return;
-            if (b.WaitDependency("LoginBootloader")) return;
+            if (bootstrapper.WaitDependency("LocalizeBootloader")) return;
+            if (bootstrapper.WaitDependency("LoginBootloader")) return;
 
             injector.Info.Version = Assembly.GetEntryAssembly()?.GetName().Version;
 
@@ -88,5 +89,6 @@ namespace HLab.Mvvm.Application
 
             injector.Menu.RegisterMenu("file/exit","{Exit}", ViewModel.Exit,null);
         }
+
     }
 }
