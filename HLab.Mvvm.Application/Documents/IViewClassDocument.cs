@@ -2,6 +2,6 @@
 
 namespace HLab.Mvvm.Application.Documents;
 
-public interface IViewClassDocument : IContentViewClass, IViewClass
+public interface IDocumentViewClass : IContentViewClass, IViewClass
 {
 }

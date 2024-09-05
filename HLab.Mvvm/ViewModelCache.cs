@@ -30,7 +30,7 @@ using HLab.Mvvm.Annotations;
 
 namespace HLab.Mvvm;
 
-public class ViewModelCache
+public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
 {
     class LinkedViewModels
     {
@@ -50,21 +50,13 @@ public class ViewModelCache
     readonly ConditionalWeakTable<object, LinkedViewModels> _linked = new();
 
     //private readonly Type _viewMode;
-    readonly IMvvmContext _context;
-    readonly IMvvmService _mvvm;
-
-    public ViewModelCache(IMvvmContext context, IMvvmService mvvm)
-    {
-        _context = context;
-        _mvvm = mvvm;
-    }
 
     public async Task<object?> GetLinkedAsync(object? baseObject,Type viewMode, Type viewClass, CancellationToken token = default)
     {
         //We cannot retrieve a view for a null object
         if(baseObject==null) return null;
 
-        var context = _context;
+        var context1 = context;
         { 
             if (baseObject is IViewModel vm)
             {
@@ -73,18 +65,18 @@ public class ViewModelCache
                 {
                     if (vm is IMvvmContextProvider p)
                     {
-                        context = context.GetChildContext(p.GetType().Name);
-                        p.ConfigureMvvmContext(context);
-                        vm.MvvmContext = context;
+                        context1 = context1.GetChildContext(p.GetType().Name);
+                        p.ConfigureMvvmContext(context1);
+                        vm.MvvmContext = context1;
                     }
-                    vm.MvvmContext = context;
+                    vm.MvvmContext = context1;
                 }
                 else
                     // set current context to be the view model one
-                    context = vm.MvvmContext;
+                    context1 = vm.MvvmContext;
             }
         }
-        var linkedType = await _mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass, token);
+        var linkedType = await mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass, token);
 
         if (linkedType == null)
         {
@@ -95,56 +87,56 @@ public class ViewModelCache
         if (true || typeof(IView).IsAssignableFrom(linkedType))
         {
             //linkedObject is View
-            return context.Locate(linkedType, baseObject);
+            return context1.Locate(linkedType, baseObject);
         }
 
         // baseObject is ViewModel
         var cache = _linked.GetOrCreateValue(baseObject);
-        return cache.GetOrAdd(linkedType, (t) => context.Locate(t, baseObject));
+        return cache.GetOrAdd(linkedType, (t) => context1.Locate(t, baseObject));
     }
 
-    public async Task<object?> GetLinkedAsync(object? baseObject,Type viewMode, Type viewClass)
-    {
-        if(baseObject==null) return null;
+    //public async Task<object?> GetLinkedAsync(object? baseObject,Type viewMode, Type viewClass)
+    //{
+    //    if(baseObject==null) return null;
 
-        var context = _context;
-        { 
-            if (baseObject is IViewModel vm)
-            {
-                // if the viewModel was created outside, it may not contain a context
-                if(vm.MvvmContext==null)
-                {
-                    if (vm is IMvvmContextProvider p)
-                    {
-                        context = context.GetChildContext(p.GetType().Name);
-                        p.ConfigureMvvmContext(context);
-                        vm.MvvmContext = context;
-                    }
-                    vm.MvvmContext = context;
-                }
-                else
-                    // set current context to be the view model one
-                    context = vm.MvvmContext;
-            }
-        }
-        var linkedType = await _mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass);
+    //    var context1 = context;
+    //    { 
+    //        if (baseObject is IViewModel vm)
+    //        {
+    //            // if the viewModel was created outside, it may not contain a context
+    //            if(vm.MvvmContext==null)
+    //            {
+    //                if (vm is IMvvmContextProvider p)
+    //                {
+    //                    context1 = context1.GetChildContext(p.GetType().Name);
+    //                    p.ConfigureMvvmContext(context1);
+    //                    vm.MvvmContext = context1;
+    //                }
+    //                vm.MvvmContext = context1;
+    //            }
+    //            else
+    //                // set current context to be the view model one
+    //                context1 = vm.MvvmContext;
+    //        }
+    //    }
+    //    var linkedType = await mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass);
 
-        if (linkedType == null)
-        {
-            return null;
-        }
+    //    if (linkedType == null)
+    //    {
+    //        return null;
+    //    }
 
-        // we don't want to cache views cause they cannot be used twice
-        if (typeof(IView).IsAssignableFrom(linkedType))
-        {
-            //linkedObject is View
-            return context.Locate(linkedType, baseObject);
-        }
+    //    // we don't want to cache views cause they cannot be used twice
+    //    if (typeof(IView).IsAssignableFrom(linkedType))
+    //    {
+    //        //linkedObject is View
+    //        return context1.Locate(linkedType, baseObject);
+    //    }
 
-        // baseObject is ViewModel
-        var cache = _linked.GetOrCreateValue(baseObject);
-        return cache.GetOrAdd(linkedType, (t) => context.Locate(t, baseObject));
-    }
+    //    // baseObject is ViewModel
+    //    var cache = _linked.GetOrCreateValue(baseObject);
+    //    return cache.GetOrAdd(linkedType, (t) => context1.Locate(t, baseObject));
+    //}
     public async Task<IView?> GetViewAsync(object? baseObject, Type? viewMode, Type? viewClass, CancellationToken token = default)
     {
         //TODO : find a solution to identify baseObject type when it's null and retrieve an empty view
@@ -163,10 +155,10 @@ public class ViewModelCache
                 switch (linked)
                 {
                     case null:
-                        return await _mvvm.GetNotFoundViewAsync(baseObject.GetType(), viewMode, viewClass, token);
+                        return await mvvm.GetNotFoundViewAsync(baseObject.GetType(), viewMode, viewClass, token);
 
                     case IView fe:
-                        await _mvvm.PrepareViewAsync(fe, token);
+                        await mvvm.PrepareViewAsync(fe, token);
                         return fe;
 
                     default:

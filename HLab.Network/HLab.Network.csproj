@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-        <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+        <TargetFrameworks>net8.0</TargetFrameworks>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <Configurations>Debug;Release;DebugRelease</Configurations>
     <LangVersion>default</LangVersion>
@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HLab.Core\HLab.Core.csproj" />
-    <ProjectReference Include="..\HLab.Notify.Annotations\HLab.Notify.Annotations.csproj" />
   </ItemGroup>
 
 </Project>

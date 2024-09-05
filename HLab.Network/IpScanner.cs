@@ -6,22 +6,18 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using HLab.Notify.Annotations;
 
 namespace HLab.Network
 {
     public class IpScanner
     {
-        readonly IEventHandlerService _eventHandlerService;
-
         public ReadOnlyObservableCollection<string> FoundServers { get; }
 
-        readonly ObservableCollection<string> _foundServers = new ObservableCollection<string>();
+        readonly ObservableCollection<string> _foundServers = [];
 
-        public IpScanner(IEventHandlerService eventHandlerService)
+        public IpScanner()
         {
-            _eventHandlerService = eventHandlerService;
-            FoundServers = new ReadOnlyObservableCollection<string>(_foundServers);
+            FoundServers = new(_foundServers);
         }
 
         public void Scan(int port)
@@ -53,10 +49,7 @@ namespace HLab.Network
                     if (scan.Connected)
                     {
                         var host = Dns.GetHostEntry(ip);
-                        _eventHandlerService.Invoke(() =>
-                        {
-                            _foundServers.Add(host.HostName);
-                        });
+                        _foundServers.Add(host.HostName);
                     }
                 }
                 catch
@@ -104,7 +97,7 @@ namespace HLab.Network
                 Debug.WriteLine($"ping {ret.Address} -> {ret.RoundtripTime}");
                 if (await ConnectAsync(ip, port))
                 {
-                    string server = ip.ToString();
+                    var server = ip.ToString();
                     try
                     {
                         server = (await Dns.GetHostEntryAsync(ip)).HostName;
@@ -113,7 +106,7 @@ namespace HLab.Network
                     {
 
                     }
-                    _eventHandlerService.Invoke(() => { _foundServers.Add(server); });
+                    _foundServers.Add(server);
                 }
             }
 
@@ -154,23 +147,23 @@ namespace HLab.Network
 
         static IPAddress GetNetworkAddress(IPAddress address, IPAddress subnetMask)
         {
-            byte[] ipAdressBytes = address.GetAddressBytes();
-            byte[] subnetMaskBytes = subnetMask.GetAddressBytes();
+            var ipAddressBytes = address.GetAddressBytes();
+            var subnetMaskBytes = subnetMask.GetAddressBytes();
 
-            if (ipAdressBytes.Length != subnetMaskBytes.Length)
+            if (ipAddressBytes.Length != subnetMaskBytes.Length)
                 throw new ArgumentException("Lengths of IP address and subnet mask do not match.");
 
-            byte[] broadcastAddress = new byte[ipAdressBytes.Length];
-            for (int i = 0; i < broadcastAddress.Length; i++)
+            var broadcastAddress = new byte[ipAddressBytes.Length];
+            for (var i = 0; i < broadcastAddress.Length; i++)
             {
-                broadcastAddress[i] = (byte)(ipAdressBytes[i] & (subnetMaskBytes[i]));
+                broadcastAddress[i] = (byte)(ipAddressBytes[i] & (subnetMaskBytes[i]));
             }
             return new IPAddress(broadcastAddress);
         }
 
-        static UInt32 ToUInt32(IPAddress addr)
+        static uint ToUInt32(IPAddress address)
         {
-            var ipBytes = addr.GetAddressBytes();
+            var ipBytes = address.GetAddressBytes();
             var ip = (uint)ipBytes [0] << 24;
             ip += (uint)ipBytes [1] << 16;
             ip += (uint)ipBytes [2] <<8;
@@ -178,9 +171,9 @@ namespace HLab.Network
             return ip;
         }
 
-        static IPAddress FromUInt32(UInt32 addr)
+        static IPAddress FromUInt32(uint address)
         {
-            return new IPAddress(new byte[]{(byte)(addr>>24),(byte)(addr>>16),(byte)(addr>>8),(byte)(addr)});
+            return new IPAddress(new byte[]{(byte)(address>>24),(byte)(address>>16),(byte)(address>>8),(byte)(address)});
         }
 
     }

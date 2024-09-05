@@ -32,7 +32,7 @@ public abstract class DocumentService : IDocumentService
             await OpenDocumentAsync(view, presenter);
         else
         {
-            var doc = await _mvvm.MainContext.GetViewAsync(obj, typeof(DefaultViewMode), typeof(IViewClassDocument));
+            var doc = await _mvvm.MainContext.GetViewAsync(obj, typeof(DefaultViewMode), typeof(IDocumentViewClass));
             await OpenDocumentAsync(doc, presenter);
         }
     }

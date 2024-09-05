@@ -6,8 +6,5 @@ namespace HLab.Mvvm;
 
 public class MvvmBootloader(IMvvmService mvvm) : IBootloader
 {
-    public async Task LoadAsync(IBootContext b)
-    {
-        await mvvm.RegisterAsync();
-    }
+    public async Task LoadAsync(IBootContext b) => await mvvm.RegisterAsync();
 }

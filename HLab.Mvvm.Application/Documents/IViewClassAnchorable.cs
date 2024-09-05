@@ -1,6 +1,6 @@
 ﻿namespace HLab.Mvvm.Application.Documents;
 
-public interface IViewClassAnchorable : IViewClassDocument
+public interface IAnchorableViewClass : IDocumentViewClass
 {
     string ContentId { get; }
 }
