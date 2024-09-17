@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -37,26 +38,23 @@ namespace HLab.Network
         {
             var ping = new Ping();
             var ret = ping.Send(ip, 5);
-            if (ret.Status == IPStatus.Success)
+            if (ret.Status != IPStatus.Success) return false;
+
+            using var scan = new TcpClient();
+            try
             {
-                using var scan = new TcpClient();
-                try
+                scan.ReceiveTimeout = 30;
+                scan.SendTimeout = 30;
+                scan.Connect(ip, port);
+                if (scan.Connected)
                 {
-
-                    scan.ReceiveTimeout = 30;
-                    scan.SendTimeout = 30;
-                    scan.Connect(ip, port);
-                    if (scan.Connected)
-                    {
-                        var host = Dns.GetHostEntry(ip);
-                        _foundServers.Add(host.HostName);
-                    }
+                    var host = Dns.GetHostEntry(ip);
+                    _foundServers.Add(host.HostName);
                 }
-                catch
-                {
-                    return false;
-                }
-
+            }
+            catch
+            {
+                return false;
             }
 
             return false;
@@ -64,67 +62,48 @@ namespace HLab.Network
         }
 
 
-        Task<bool> ConnectAsync (IPAddress ip, int port)
+        static async Task<bool> ConnectAsync (IPAddress ip, int port)
         {
-            var task = new Task<bool>(() =>
-            {
-                using var scan = new TcpClient();
-                try
-                {
 
-                    scan.ReceiveTimeout = 30;
-                    scan.SendTimeout = 30;
-                    scan.Connect(ip, port);
-                    return scan.Connected;
-                }
-                catch(Exception e)
-                {
-                    return false;
-                }
-            });
+            var scan = new TcpClient();
+            scan.ReceiveTimeout = 30;
+            scan.SendTimeout = 30;
 
-            task.Start();
+            await scan.ConnectAsync(ip, port);
 
-            return task;
+            return scan.Connected;
         }
 
         public async Task<bool> ScanAsync(IPAddress ip, int port)
         {
             var ret = await new Ping().SendPingAsync(ip, 500);
 
-            if (ret.Status == IPStatus.Success)
-            {
-                Debug.WriteLine($"ping {ret.Address} -> {ret.RoundtripTime}");
-                if (await ConnectAsync(ip, port))
-                {
-                    var server = ip.ToString();
-                    try
-                    {
-                        server = (await Dns.GetHostEntryAsync(ip)).HostName;
-                    }
-                    catch(SocketException)
-                    {
+            if (ret.Status != IPStatus.Success) return false;
 
-                    }
-                    _foundServers.Add(server);
-                }
+            Debug.WriteLine($"ping {ret.Address} -> {ret.RoundtripTime}");
+            if (!await ConnectAsync(ip, port)) return false;
+
+            var server = ip.ToString();
+            try
+            {
+                server = (await Dns.GetHostEntryAsync(ip)).HostName;
             }
+            catch(SocketException)
+            {
+
+            }
+            _foundServers.Add(server);
 
             return false;
         }
 
-        static IEnumerable<Tuple<IPAddress,IPAddress>> GetIpAddresses()
+        static IEnumerable<(IPAddress,IPAddress)> GetIpAddresses()
         {
-            foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                foreach (var ipInfo in adapter.GetIPProperties().UnicastAddresses)
-                {
-                    if (ipInfo.Address.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        yield return Tuple.Create(ipInfo.Address,ipInfo.IPv4Mask);
-                    }
-                }
-            }
+            return 
+                from adapter in NetworkInterface.GetAllNetworkInterfaces() 
+                from ipInfo in adapter.GetIPProperties().UnicastAddresses 
+                where ipInfo.Address.AddressFamily == AddressFamily.InterNetwork 
+                select (ipInfo.Address,ipInfo.IPv4Mask);
         }
 
         static IEnumerable<IPAddress> GetAllIpFromIpMask(IPAddress ipAddress, IPAddress maskAddress)
