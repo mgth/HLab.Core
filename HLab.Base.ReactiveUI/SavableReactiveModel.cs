@@ -11,7 +11,7 @@ public abstract class SavableReactiveModel : ReactiveModel, ISavable
     public bool Saved
     {
         get => _saved;
-        set => SetAndRaise(ref _saved, value);
+        set => this.SetAndRaise(ref _saved, value);
     }
     bool _saved;
 
