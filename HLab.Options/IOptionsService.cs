@@ -33,7 +33,6 @@ public interface IOptionsService : IService
 public interface IOptionsProvider
 {
     string Name { get; }
-    IOptionsService Options { get; set; }
     Task<IEnumerable<string>> GetSubListAsync(string path, string name, int? userid);
     Task<IEnumerable<string>> GetOptionsAsync(string path, string name, int? userid);
 

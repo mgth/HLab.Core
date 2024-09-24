@@ -12,8 +12,8 @@ public class OptionsServices : IOptionsService
 
     public void AddProvider(IOptionsProvider provider)
     {
-        provider.Options = this;
         _providers.Add(provider);
+        this.ServiceState = ServiceState.Available;
     }
 
     public string OptionsPath { get; set; } = "";
@@ -125,5 +125,5 @@ public class OptionsServices : IOptionsService
         return default;
     }
 
-    public ServiceState ServiceState { get; }
+    public ServiceState ServiceState { get; private set;} = ServiceState.NotConfigured;
 }
