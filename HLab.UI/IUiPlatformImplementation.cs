@@ -50,4 +50,6 @@ public interface IUiPlatformImplementation
     ISaveFileDialog CreateSaveFileDialog();
 
     IEnumerable GetLogicalChildren(object fe);
+
+    Task InvokeOnUiThreadAsync(Action callback);
 }
