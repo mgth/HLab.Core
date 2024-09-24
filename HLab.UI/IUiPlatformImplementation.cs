@@ -23,7 +23,20 @@ public interface ISaveFileDialog : IFileDialog
 
 public static class UiPlatform
 {
-    public static IUiPlatformImplementation? Implementation { get; set; } = null;
+    //public static IUiPlatformImplementation? Implementation { get; set; } = null;
+    
+    public static void Configure(IUiPlatformImplementation implementation)
+    {
+        Implementation = implementation;
+    }
+
+    static IUiPlatformImplementation? _implementation;
+    static IUiPlatformImplementation Implementation
+    {
+        get => _implementation ?? throw new InvalidOperationException("UiPlatform.Implementation is not set");
+        set => _implementation = value;
+    }
+
 
     public static IEnumerable<TChild> FindLogicalChildren<TParent,TChild>(this TParent fe)
     {
@@ -42,6 +55,8 @@ public static class UiPlatform
             }
         }
     }
+    
+    public static IGuiTimer CreateGuiTimer() => Implementation.CreateGuiTimer();
 }
 
 public interface IUiPlatformImplementation
@@ -50,4 +65,6 @@ public interface IUiPlatformImplementation
     ISaveFileDialog CreateSaveFileDialog();
 
     IEnumerable GetLogicalChildren(object fe);
+    
+    IGuiTimer CreateGuiTimer();
 }
