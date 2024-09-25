@@ -56,7 +56,12 @@ public static class UiPlatform
         }
     }
     
+    public static Task InvokeOnUiThreadAsync(Action callback) => Implementation.InvokeOnUiThreadAsync(callback);
+
     public static IGuiTimer CreateGuiTimer() => Implementation.CreateGuiTimer();
+    
+    public static string? GetClipboardText() => Implementation.GetClipboardText();
+    public static void SetClipboardText(string text) => Implementation.SetClipboardText(text);
 }
 
 public interface IUiPlatformImplementation
@@ -69,4 +74,7 @@ public interface IUiPlatformImplementation
     Task InvokeOnUiThreadAsync(Action callback);
     
     IGuiTimer CreateGuiTimer();
+    
+    string? GetClipboardText();
+    void SetClipboardText(string text);
 }
