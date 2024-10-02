@@ -34,9 +34,9 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
 {
     class LinkedViewModels
     {
-        readonly ConcurrentDictionary<Type, object> _linked = new();
+        readonly ConcurrentDictionary<Type, object?> _linked = new();
 
-        public object GetOrAdd(Type type, Func<Type,object> factory)
+        public object? GetOrAdd(Type type, Func<Type, object?> factory)
         {
             return _linked.GetOrAdd(type, factory);
         }

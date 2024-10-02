@@ -57,11 +57,15 @@ public static class UiPlatform
     }
     
     public static Task InvokeOnUiThreadAsync(Action callback) => Implementation.InvokeOnUiThreadAsync(callback);
+    public static Task InvokeOnUiThreadAsync(Func<Task> callback) => Implementation.InvokeOnUiThreadAsync(callback);
+    public static void VerifyAccess() => Implementation.VerifyAccess();
 
     public static IGuiTimer CreateGuiTimer() => Implementation.CreateGuiTimer();
     
     public static string? GetClipboardText() => Implementation.GetClipboardText();
     public static void SetClipboardText(string text) => Implementation.SetClipboardText(text);
+
+    public static void Quit() => Implementation.Quit();
 }
 
 public interface IUiPlatformImplementation
@@ -72,9 +76,14 @@ public interface IUiPlatformImplementation
     IEnumerable GetLogicalChildren(object fe);
 
     Task InvokeOnUiThreadAsync(Action callback);
+    Task InvokeOnUiThreadAsync(Func<Task> callback);
+
+    void VerifyAccess();
     
     IGuiTimer CreateGuiTimer();
     
     string? GetClipboardText();
     void SetClipboardText(string text);
+
+    void Quit();
 }

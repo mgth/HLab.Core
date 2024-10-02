@@ -45,4 +45,6 @@ public interface IMvvmService : IService
 
     Task<IView> GetNotFoundViewAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default);
     Task PrepareViewAsync(IView fe, CancellationToken token = default);
+
+    IWindow ViewAsWindow(IView? view);
 }

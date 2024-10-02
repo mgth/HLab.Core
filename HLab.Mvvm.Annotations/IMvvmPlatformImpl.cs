@@ -4,6 +4,12 @@ using System.Threading.Tasks;
 
 namespace HLab.Mvvm.Annotations;
 
+public interface IWindow
+{
+    bool? ShowDialog();
+    void Show();
+}
+
 public interface IMvvmPlatformImpl
 {
     /// <summary>
@@ -42,5 +48,7 @@ public interface IMvvmPlatformImpl
     object Activate(IView obj);
 
     object Deactivate(IView obj);
+
+    IWindow ViewAsWindow(IView? view); 
 
 }

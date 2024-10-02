@@ -85,10 +85,10 @@ public class MvvmContext : IMvvmContext//, IInitializer
     public Task<object> GetLinkedAsync(object o, Type viewMode, Type viewClass, CancellationToken token = default) 
         => _cache.GetLinkedAsync(o, viewMode, viewClass, token);
 
-    public Task<IView?> GetViewAsync(object baseObject, CancellationToken token) 
+    public Task<IView?> GetViewAsync(object? baseObject, CancellationToken token) 
         => GetViewAsync(baseObject, typeof(DefaultViewMode), typeof(IDefaultViewClass), token);
 
-    public Task<IView?> GetViewAsync(object baseObject, Type viewMode, Type viewClass, CancellationToken token = default)
+    public Task<IView?> GetViewAsync(object? baseObject, Type viewMode, Type viewClass, CancellationToken token = default)
         => _cache.GetViewAsync(baseObject, viewMode, viewClass, token);
 
     //private readonly Func<Type, object> _locate ;
@@ -96,14 +96,14 @@ public class MvvmContext : IMvvmContext//, IInitializer
         => (T)Locate(typeof(T), baseObject);
 
 
-    public object Locate(Type type, object baseObject = null) 
+    public object? Locate(Type type, object baseObject = null) 
         =>
             Locate(() => _mvvm.LocateFunc?.Invoke(type), baseObject); // _locateFunc();
 
     public T Locate<T>(Func<T> locate, object baseObject = null) 
         => (T)Locate(new Func<object>(() => locate()), baseObject);
 
-    public object Locate(Func<object> locate, object baseObject = null)
+    public object? Locate(Func<object> locate, object baseObject = null)
     {
         var obj = locate();
         switch (obj)

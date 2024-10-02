@@ -21,7 +21,7 @@ public abstract class DocumentService : IDocumentService
 
     public IDocumentPresenter MainPresenter { get; set; }
 
-    public async Task OpenDocumentAsync(object obj, IDocumentPresenter presenter)
+    public async Task OpenDocumentAsync(object? obj, IDocumentPresenter presenter)
     {
         if (obj is Type t)
         {

@@ -44,7 +44,7 @@ public static class EntityExt
     //}
 
     //public static T GetLinked<T>(this INotifyPropertyChanged viewModel) => viewModel.Get<T>("#Linked");
-    public static void SetLinked<T>(this IViewModel viewModel, T view)
+    public static void SetLinked<T>(this IViewModel viewModel, T? view)
     {
         //TODO
             //var token = viewModel.Get<SuspenderToken>("#EntityNullToken");
