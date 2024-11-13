@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using HLab.Core.Annotations;
 
 namespace HLab.Options;
 

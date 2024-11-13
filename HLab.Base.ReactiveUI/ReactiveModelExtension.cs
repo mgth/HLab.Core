@@ -10,7 +10,7 @@ public static class ReactiveModelExtension
 {
     static readonly MemberInfo SavedProperty = typeof(ISavable).GetMember("Saved")[0];
 
-    public static void UnsavedOn<T>( this T @this,params Expression<Func<T,ISavable>>[] predicates) where T : SavableReactiveModel
+    public static void UnsavedOn<T>( this T @this,params Expression<Func<T,ISavable>>[] predicates) where T : ISavable
     {
         foreach(var predicate in predicates)
         {
