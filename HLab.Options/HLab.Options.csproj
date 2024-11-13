@@ -8,8 +8,4 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\HLab.Erp\HLab.Erp.Core.Annotations\HLab.Erp.Core.Annotations.csproj" />
-  </ItemGroup>
-
 </Project>
