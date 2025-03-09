@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HLab.Base.Extensions;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,8 @@ public interface IWindow
 {
     bool? ShowDialog();
     void Show();
+    object DataContext { get; set; }
+    IView? View { get; set; }
 }
 
 public interface IMvvmPlatformImpl
@@ -50,5 +53,6 @@ public interface IMvvmPlatformImpl
     object Deactivate(IView obj);
 
     IWindow ViewAsWindow(IView? view); 
+    IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new(); 
 
 }

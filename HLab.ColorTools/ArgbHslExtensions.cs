@@ -99,7 +99,7 @@ public static class ArgbHslNativeExtensions
         if (hsl.Saturation == 0.0)
         {
             // achromatic color (gray scale)
-            return new ColorRGB<double>(
+            return HLabColors.RGB(
                 hsl.Alpha,
                 hsl.Lightness,
                 hsl.Lightness,
@@ -248,7 +248,7 @@ public static class RGB_HSL_Extensions
         if (hsl.Saturation == T.Zero)
         {
             // achromatic color (gray scale)
-            return new ColorRGB<T>(
+            return HLabColors.RGB(
                 hsl.Alpha,
                 hsl.Lightness,
                 hsl.Lightness,
@@ -293,7 +293,7 @@ public static class RGB_HSL_Extensions
         var tg = ToRgb(hk);
         var tb = ToRgb(hk - ColorConst<T>.Ndiv3);
 
-        return new ColorRGB<T>(hsl.Alpha,tr,tg,tb);
+        return HLabColors.RGB(hsl.Alpha,tr,tg,tb);
     }
 
 

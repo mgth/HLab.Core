@@ -23,8 +23,8 @@ public partial struct Rect
             }
             else
             {
-                _x = location._x;
-                _y = location._y;
+                _x = location.X;
+                _x = location.Y;
                 _width = size._width;
                 _height = size._height;
             }
@@ -56,12 +56,12 @@ public partial struct Rect
         public Rect(Point point1,
                     Point point2)
         {
-            _x = Math.Min(point1._x, point2._x);
-            _y = Math.Min(point1._y, point2._y);
+            _x = Math.Min(point1.X, point2.X);
+            _y = Math.Min(point1.Y, point2.Y);
 
             //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
-            _width = Math.Max(Math.Max(point1._x, point2._x) - _x, 0);
-            _height = Math.Max(Math.Max(point1._y, point2._y) - _y, 0);
+            _width = Math.Max(Math.Max(point1.X, point2.X) - X, 0);
+            _height = Math.Max(Math.Max(point1.Y, point2.Y) - Y, 0);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ public partial struct Rect
         {
             get
             {
-                return new Point(_x, _y);
+                return new Point(X, Y);
             }
             set
             {
@@ -144,8 +144,8 @@ public partial struct Rect
                     throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
                 }
                 
-                _x = value._x;
-                _y = value._y;
+                X = value.X;
+                Y = value.Y;
             }
         }
 
@@ -188,7 +188,7 @@ public partial struct Rect
         {
             get
             {
-                return _x;
+                return X;
             }
             set
             {
@@ -197,7 +197,7 @@ public partial struct Rect
                     throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
                 }
 
-                _x = value;
+                X = value;
             }
 }
 
@@ -210,7 +210,7 @@ public partial struct Rect
         {
             get
             {
-                return _y;
+                return Y;
             }
             set
             {
@@ -219,7 +219,7 @@ public partial struct Rect
                     throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
                 }
 
-                _y = value;
+                Y = value;
             }
         }
 
@@ -275,13 +275,13 @@ public partial struct Rect
         /// Left Property - This is a read-only alias for X
         /// If this is the empty rectangle, the value will be positive infinity.
         /// </summary>
-        public double Left => _x;
+        public double Left => X;
 
         /// <summary>
         /// Top Property - This is a read-only alias for Y
         /// If this is the empty rectangle, the value will be positive infinity.
         /// </summary>
-        public double Top => _y;
+        public double Top => Y;
 
         /// <summary>
         /// Right Property - This is a read-only alias for X + Width
@@ -296,7 +296,7 @@ public partial struct Rect
                     return double.NegativeInfinity;
                 }
 
-                return _x + _width;
+                return X + _width;
             }
         }
 
@@ -313,7 +313,7 @@ public partial struct Rect
                     return double.NegativeInfinity;
                 }
 
-                return _y + _height;
+                return Y + _height;
             }
         }
 
@@ -356,7 +356,7 @@ public partial struct Rect
         /// </returns>
         public bool Contains(Point point)
         {
-            return Contains(point._x, point._y);
+            return Contains(point.X, point.Y);
         }
 
         /// <summary>
@@ -383,10 +383,10 @@ public partial struct Rect
                 return false;
             }
 
-            return (_x <= rect._x &&
-                    _y <= rect._y &&
-                    _x+_width >= rect._x+rect._width &&
-                    _y+_height >= rect._y+rect._height );
+            return (_x <= rect.X &&
+                    _y <= rect.Y &&
+                    _x+_width >= rect.X+rect._width &&
+                    _y+_height >= rect.Y+rect._height );
         }
 
         /// <summary>
@@ -426,8 +426,8 @@ public partial struct Rect
             }
             else
             {
-                double left   = Math.Max(Left, rect.Left);
-                double top    = Math.Max(Top, rect.Top);
+                var left   = Math.Max(Left, rect.Left);
+                var top    = Math.Max(Top, rect.Top);
                 
                 //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
                 _width = Math.Max(Math.Min(Right, rect.Right) - left, 0);
@@ -459,14 +459,14 @@ public partial struct Rect
             }
             else if (!rect.IsEmpty)
             {
-                double left = Math.Min(Left, rect.Left);
-                double top = Math.Min(Top, rect.Top);
+                var left = Math.Min(Left, rect.Left);
+                var top = Math.Min(Top, rect.Top);
 
                 
                 // We need this check so that the math does not result in NaN
                 if ((rect.Width == Double.PositiveInfinity) || (Width == Double.PositiveInfinity))
                 {
-                    _width = Double.PositiveInfinity;
+                    _width = double.PositiveInfinity;
                 }
                 else
                 {
@@ -529,8 +529,8 @@ public partial struct Rect
                 throw new System.InvalidOperationException("SR.Rect_CannotCallMethod");
             }
 
-            _x += offsetVector._x;
-            _y += offsetVector._y;
+            _x += offsetVector.X;
+            _y += offsetVector.Y;
         }
 
         /// <summary>
@@ -710,9 +710,9 @@ public partial struct Rect
         private bool ContainsInternal(double x, double y)
         {
             // We include points on the edge as "contained".
-            // We do "x - _width <= _x" instead of "x <= _x + _width"
+            // We do "x - _width <= X" instead of "x <= X + _width"
             // so that this check works when _width is PositiveInfinity
-            // and _x is NegativeInfinity.
+            // and X is NegativeInfinity.
             return ((x >= _x) && (x - _width <= _x) &&
                     (y >= _y) && (y - _height <= _y));
         }
@@ -722,8 +722,8 @@ public partial struct Rect
             Rect rect = new Rect();
             // We can't set these via the property setters because negatives widths
             // are rejected in those APIs.
-            rect._x = Double.PositiveInfinity;
-            rect._y = Double.PositiveInfinity;
+            rect.X = Double.PositiveInfinity;
+            rect.Y = Double.PositiveInfinity;
             rect._width = Double.NegativeInfinity;
             rect._height = Double.NegativeInfinity;
             return rect;
@@ -869,8 +869,8 @@ partial struct Rect : IFormattable
         else
         {
             // Perform field-by-field XOR of HashCodes
-            return X.GetHashCode() ^
-                   Y.GetHashCode() ^
+            return _x.GetHashCode() ^
+                   _y.GetHashCode() ^
                    Width.GetHashCode() ^
                    Height.GetHashCode();
         }
@@ -1031,8 +1031,8 @@ partial struct Rect : IFormattable
         return String.Format(provider,
             "{1:" + format + "}{0}{2:" + format + "}{0}{3:" + format + "}{0}{4:" + format + "}",
             separator,
-            _x,
-            _y,
+            X,
+            Y,
             _width,
             _height);
     }

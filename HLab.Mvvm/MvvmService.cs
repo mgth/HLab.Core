@@ -204,14 +204,15 @@ public class MvvmService : IMvvmService
 
     public Task PrepareViewAsync(IView view, CancellationToken token = default) => _platform.PrepareViewAsync(view, token);
     public IWindow ViewAsWindow(IView? view) => _platform.ViewAsWindow(view);
+    public IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new()  => _platform.ViewAsWindow<T>(view);
 
 
-    /// <summary>
-    /// Get all ViewClass assigned to a specific type
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    static IEnumerable<Type> GetViewClasses(Type type) 
+   /// <summary>
+   /// Get all ViewClass assigned to a specific type
+   /// </summary>
+   /// <param name="type"></param>
+   /// <returns></returns>
+   static IEnumerable<Type> GetViewClasses(Type type) 
         => type
             .GetInterfaces()
             .Where(i => typeof(IViewClass).IsAssignableFrom(i) && typeof(IViewClass) != i);
