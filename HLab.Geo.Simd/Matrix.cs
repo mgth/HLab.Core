@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace HLab.Geo;
+namespace HLab.Geo.Simd;
 
 [Flags]
 internal enum MatrixTypes
@@ -36,25 +36,25 @@ internal enum MatrixTypes
             // Scaling
             if (0 != (matrixType & MatrixTypes.TRANSFORM_IS_SCALING))
             {
-                rect._x *= matrix._m11;
-                rect._y *= matrix._m22;
-                rect._width *= matrix._m11;
-                rect._height *= matrix._m22;
+                rect.X *= matrix._m11;
+                rect.Y *= matrix._m22;
+                rect.Width *= matrix._m11;
+                rect.Height *= matrix._m22;
 
                 // Ensure the width is always positive.  For example, if there was a reflection about the
                 // y axis followed by a translation into the visual area, the width could be negative.
-                if (rect._width < 0.0)
+                if (rect.Width < 0.0)
                 {
-                    rect._x += rect._width;
-                    rect._width = -rect._width;
+                    rect.X += rect.Width;
+                    rect.Width = -rect.Width;
                 }
 
                 // Ensure the height is always positive.  For example, if there was a reflection about the
                 // x axis followed by a translation into the visual area, the height could be negative.
-                if (rect._height < 0.0)
+                if (rect.Height < 0.0)
                 {
-                    rect._y += rect._height;
-                    rect._height = -rect._height;
+                    rect.Y += rect.Height;
+                    rect.Height = -rect.Height;
                 }
             }
 
@@ -62,10 +62,10 @@ internal enum MatrixTypes
             if (0 != (matrixType & MatrixTypes.TRANSFORM_IS_TRANSLATION))
             {
                 // X
-                rect._x += matrix._offsetX;
+                rect.X += matrix._offsetX;
 
                 // Y
-                rect._y += matrix._offsetY;
+                rect.Y += matrix._offsetY;
             }
 
             if (matrixType == MatrixTypes.TRANSFORM_IS_UNKNOWN)
@@ -77,11 +77,11 @@ internal enum MatrixTypes
                 Point point3 = matrix.Transform(rect.BottomLeft);
 
                 // Width and height is always positive here.
-                rect._x = Math.Min(Math.Min(point0.X, point1.X), Math.Min(point2.X, point3.X));
-                rect._y = Math.Min(Math.Min(point0.Y, point1.Y), Math.Min(point2.Y, point3.Y));
+                rect.X = Math.Min(Math.Min(point0.X, point1.X), Math.Min(point2.X, point3.X));
+                rect.Y = Math.Min(Math.Min(point0.Y, point1.Y), Math.Min(point2.Y, point3.Y));
 
-                rect._width = Math.Max(Math.Max(point0.X, point1.X), Math.Max(point2.X, point3.X)) - rect._x;
-                rect._height = Math.Max(Math.Max(point0.Y, point1.Y), Math.Max(point2.Y, point3.Y)) - rect._y;
+                rect.Width = Math.Max(Math.Max(point0.X, point1.X), Math.Max(point2.X, point3.X)) - rect.X;
+                rect.Height = Math.Max(Math.Max(point0.Y, point1.Y), Math.Max(point2.Y, point3.Y)) - rect.Y;
             }
         }
 

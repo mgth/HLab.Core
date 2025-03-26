@@ -56,10 +56,9 @@ public interface IView<TViewMode, out TViewModel> : IView
 {
 }
 
-
-
 public interface IView<out TViewModel> : IView<DefaultViewMode,TViewModel>
 {
+
 }
 
 public interface IViewUnload
@@ -77,12 +76,7 @@ public enum MvvmCacheability
 }
 
 [AttributeUsage(AttributeTargets.Class|AttributeTargets.Interface,Inherited = true)]
-public class MvvmCacheabilityAttribute : Attribute
+public class MvvmCacheabilityAttribute(MvvmCacheability cacheability) : Attribute
 {
-    public MvvmCacheabilityAttribute(MvvmCacheability cacheability)
-    {
-        Cacheability = cacheability;
-    }
-
-    public MvvmCacheability Cacheability { get; }
+   public MvvmCacheability Cacheability { get; } = cacheability;
 }
