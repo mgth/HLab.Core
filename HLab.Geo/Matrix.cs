@@ -3,7 +3,7 @@
 namespace HLab.Geo;
 
 [Flags]
-internal enum MatrixTypes
+enum MatrixTypes
 {
     TRANSFORM_IS_IDENTITY = 0,
     TRANSFORM_IS_TRANSLATION = 1,
@@ -11,7 +11,7 @@ internal enum MatrixTypes
     TRANSFORM_IS_UNKNOWN = 4,
 }
 
-    internal static class MatrixUtil
+static class MatrixUtil
     {
         /// <summary>
         /// TransformRect - Internal helper for perf
@@ -252,7 +252,7 @@ internal enum MatrixTypes
         }
     }
 
-    internal static class DoubleUtil
+static class DoubleUtil
     {
         // Const values come from sdk\inc\crt\float.h
         internal const double DBL_EPSILON  =   2.2204460492503131e-016; /* smallest such that 1.0+DBL_EPSILON != 1.0 */
@@ -713,7 +713,7 @@ public partial struct Matrix: IFormattable
 
     // the transform is identity by default
     // Actually fill in the fields - some (internal) code uses the fields directly for perf.
-    private static Matrix s_identity = CreateIdentity();
+    static Matrix s_identity = CreateIdentity();
 
     #region Constructor
 
@@ -1450,7 +1450,7 @@ public partial struct Matrix: IFormattable
     /// </summary>
     /// <param name='offsetX'>The offset in X</param>
     /// <param name='offsetY'>The offset in Y</param>
-    internal static Matrix CreateTranslation(double offsetX, double offsetY)
+    public static Matrix CreateTranslation(double offsetX, double offsetY)
     {
         var matrix = new Matrix();
 
@@ -1462,13 +1462,22 @@ public partial struct Matrix: IFormattable
         return matrix;
     }
 
+    public static Matrix CreateScale(double scaleX, double scaleY)
+    {
+       return new (
+          scaleX, 0,      // M11, M12
+          0,      scaleY, // M21, M22
+          0,      0       // OffsetX, OffsetY
+       );
+    }
+
     #endregion Internal Methods
 
     #region Private Methods
     /// <summary>
     /// Sets the transformation to the identity.
     /// </summary>
-    private static Matrix CreateIdentity()
+    static Matrix CreateIdentity()
     {
         Matrix matrix = new Matrix();
         matrix.SetMatrix(1, 0,
@@ -1485,7 +1494,7 @@ public partial struct Matrix: IFormattable
     ///             \ offsetX, offsetY, 1 /
     /// where offsetX, offsetY is the translation.
     ///</summary>
-    private void SetMatrix(double m11, double m12,
+    void SetMatrix(double m11, double m12,
         double m21, double m22,
         double offsetX, double offsetY,
         MatrixTypes type)
@@ -1502,7 +1511,7 @@ public partial struct Matrix: IFormattable
     /// <summary>
     /// Set the type of the matrix based on its current contents
     /// </summary>
-    private void DeriveMatrixType()
+    void DeriveMatrixType()
     {
         _type = 0;
 
@@ -1536,7 +1545,7 @@ public partial struct Matrix: IFormattable
     /// that coefficients are correct.   
     /// </summary>
     [Conditional("DEBUG")]
-    private void Debug_CheckType()
+    void Debug_CheckType()
     {
         switch(_type)
         {
@@ -1575,7 +1584,7 @@ public partial struct Matrix: IFormattable
     /// true if the the matrix is identity.  If it returns false
     /// the matrix may still be identity.
     /// </summary>
-    private bool IsDistinguishedIdentity
+    bool IsDistinguishedIdentity
     {
         get
         {
@@ -1585,7 +1594,7 @@ public partial struct Matrix: IFormattable
 
     // The hash code for a matrix is the xor of its element's hashes.
     // Since the identity matrix has 2 1's and 4 0's its hash is 0.
-    private const int c_identityHashCode = 0;
+    const int c_identityHashCode = 0;
     
     #endregion Private Properties and Fields
 
@@ -1604,7 +1613,7 @@ public partial struct Matrix: IFormattable
     //
     // Testing note: Validate that this blt will work on 64-bit
     //
-    internal Int32 _padding;
+    internal int _padding;
 #pragma warning restore 0414
 
 

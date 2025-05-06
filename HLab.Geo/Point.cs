@@ -49,7 +49,7 @@ public readonly partial struct Point(double x, double y) : IFormattable
    {
       // Helper to get the numeric list separator for a given culture.
       char separator = ',';//MS.Internal.TokenizerHelper.GetNumericListSeparator(provider);
-      return String.Format(provider,
+      return string.Format(provider,
           "{1:" + format + "}{0}{2:" + format + "}",
           separator,
           X,
