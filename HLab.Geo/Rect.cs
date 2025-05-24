@@ -22,7 +22,7 @@ public partial struct Rect
       else
       {
          _x = location.X;
-         _x = location.Y;
+         _y = location.Y;
          _width = size._width;
          _height = size._height;
       }
@@ -466,7 +466,7 @@ public partial struct Rect
          height = Math.Max(maxBottom - top, 0);
       }
 
-      return new(_x,_y,width,height);
+      return new(left,top,width,height);
    }
 
    /// <summary>

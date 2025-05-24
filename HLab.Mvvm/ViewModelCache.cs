@@ -145,8 +145,6 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
         viewClass ??= typeof(IDefaultViewClass);
         viewMode ??= typeof(DefaultViewMode);
 
-       if (baseObject.GetType().Name.Contains("AudioOutput")) { }
-
         while (true)
         {
             try
