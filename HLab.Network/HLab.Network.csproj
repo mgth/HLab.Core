@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-        <TargetFrameworks>net8.0</TargetFrameworks>
-    <Platforms>AnyCPU;x64;x86</Platforms>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <Platforms>x64;x86</Platforms>
     <Configurations>Debug;Release;DebugRelease</Configurations>
     <LangVersion>default</LangVersion>
   </PropertyGroup>
