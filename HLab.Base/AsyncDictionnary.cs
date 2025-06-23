@@ -12,8 +12,21 @@ public class AsyncDictionary<TKey,T> : IDisposable
 {
     readonly SemaphoreSlim _semaphore = new(1);
     readonly ConcurrentDictionary<TKey,T> _cache = new();
+   
+   public void Clear()
+    {
+        _semaphore.Wait();    
+        try
+        {
+            _cache.Clear();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+   }
 
-    public async Task<T> GetOrAddAsync(TKey key, Func<TKey, Task<T>> factory)
+   public async Task<T> GetOrAddAsync(TKey key, Func<TKey, Task<T>> factory)
     {
         if(factory==null) throw new ArgumentNullException(nameof(factory));
         if(key==null) return default(T);

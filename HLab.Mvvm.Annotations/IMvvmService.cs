@@ -36,7 +36,9 @@ namespace HLab.Mvvm.Annotations;
 
 public interface IMvvmService : IService
 {
-    IMvvmContext MainContext { get; }
+    void RegisterPlatform<T>() where T:IMvvmPlatformImpl;
+    bool IsPlatformRegistered { get; }
+   IMvvmContext MainContext { get; }
     HelperFactory<IViewHelper> ViewHelperFactory { get; }
     Task<Type?> GetLinkedTypeAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default);
 

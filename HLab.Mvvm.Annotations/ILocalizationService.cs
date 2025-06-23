@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using HLab.Core.Annotations;
 
 namespace HLab.Mvvm.Annotations;
 
-public interface ILocalizationService
+public interface ILocalizationService : IService
 {
     public class Design : ILocalizationService
     {
@@ -34,7 +35,9 @@ public interface ILocalizationService
         {
             throw new System.NotImplementedException();
         }
-    }
+
+        public ServiceState ServiceState => ServiceState.Available;
+   }
 
 
     string  Localize(string lang, string value);
