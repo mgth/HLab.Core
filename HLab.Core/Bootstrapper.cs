@@ -13,7 +13,6 @@ namespace HLab.Core;
 /// </summary>
 public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBootstrapper
 {
-
    readonly ConcurrentQueue<Bootloader> _queue = new();
    readonly HashSet<Bootloader> _completed = [];
    
@@ -60,7 +59,6 @@ public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBoots
             default:
                throw new ArgumentOutOfRangeException();
          }
-
       }
    }
 
@@ -73,11 +71,9 @@ public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBoots
          for (var i = 0; i < result.Count; i++)
          {
             var a = result[i].GetType().Assembly;
-            if (a.References(bootAssemblyName))
-            {
-               result.Insert(i, boot);
-               goto inserted;
-            }
+            if (!a.References(bootAssemblyName)) continue;
+            result.Insert(i, boot);
+            goto inserted;
          }
          result.Add(boot);
       inserted:;
