@@ -30,6 +30,7 @@ public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBoots
 
       while (_queue.TryDequeue(out var bootloader))
       {
+         bootloader.State = BootState.Running;
          bootloader.State = await bootloader.LoadAsync();
          switch (bootloader.State)
          {
@@ -53,9 +54,13 @@ public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBoots
                
                break;
                
-            case BootState.Running:
             case BootState.Cancel:
+               // If the bootloader is cancelled, we just skip it
+               return;
+            case BootState.Running:
             case BootState.Waiting:
+               // Do nothing, just wait for next iteration
+               break;
             default:
                throw new ArgumentOutOfRangeException();
          }
