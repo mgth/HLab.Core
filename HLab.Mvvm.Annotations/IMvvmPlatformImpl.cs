@@ -49,5 +49,6 @@ public interface IMvvmPlatformImpl
     object Deactivate(IView obj);
 
     IWindow ViewAsWindow(IView? view); 
+    IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new(); 
 
 }
