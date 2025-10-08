@@ -259,7 +259,9 @@ public class MvvmService : IMvvmService
 
    public Task PrepareViewAsync(IView view, CancellationToken token = default) => Platform.PrepareViewAsync(view, token);
 
-   public IWindow ViewAsWindow(IView? view) => Platform.ViewAsWindow(view);
+    public Task PrepareViewAsync(IView view, CancellationToken token = default) => _platform.PrepareViewAsync(view, token);
+    public IWindow ViewAsWindow(IView? view) => _platform.ViewAsWindow(view);
+    public IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new()  => _platform.ViewAsWindow<T>(view);
 
 
    /// <summary>
@@ -267,10 +269,10 @@ public class MvvmService : IMvvmService
    /// </summary>
    /// <param name="type"></param>
    /// <returns></returns>
-   static IEnumerable<Type> GetViewClasses(Type type)
-       => type
-           .GetInterfaces()
-           .Where(i => typeof(IViewClass).IsAssignableFrom(i) && typeof(IViewClass) != i);
+   static IEnumerable<Type> GetViewClasses(Type type) 
+        => type
+            .GetInterfaces()
+            .Where(i => typeof(IViewClass).IsAssignableFrom(i) && typeof(IViewClass) != i);
 
 
    readonly ConcurrentDictionary<Type, Type?> _modelsTypes = new();

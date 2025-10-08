@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 
-namespace HLab.Geo;
+namespace HLab.Geo.Simd;
 
 [Flags]
-enum MatrixTypes
+internal enum MatrixTypes
 {
     TRANSFORM_IS_IDENTITY = 0,
     TRANSFORM_IS_TRANSLATION = 1,
@@ -11,7 +11,7 @@ enum MatrixTypes
     TRANSFORM_IS_UNKNOWN = 4,
 }
 
-static class MatrixUtil
+    internal static class MatrixUtil
     {
         /// <summary>
         /// TransformRect - Internal helper for perf
@@ -36,25 +36,25 @@ static class MatrixUtil
             // Scaling
             if (0 != (matrixType & MatrixTypes.TRANSFORM_IS_SCALING))
             {
-                rect._x *= matrix._m11;
-                rect._y *= matrix._m22;
-                rect._width *= matrix._m11;
-                rect._height *= matrix._m22;
+                rect.X *= matrix._m11;
+                rect.Y *= matrix._m22;
+                rect.Width *= matrix._m11;
+                rect.Height *= matrix._m22;
 
                 // Ensure the width is always positive.  For example, if there was a reflection about the
                 // y axis followed by a translation into the visual area, the width could be negative.
-                if (rect._width < 0.0)
+                if (rect.Width < 0.0)
                 {
-                    rect._x += rect._width;
-                    rect._width = -rect._width;
+                    rect.X += rect.Width;
+                    rect.Width = -rect.Width;
                 }
 
                 // Ensure the height is always positive.  For example, if there was a reflection about the
                 // x axis followed by a translation into the visual area, the height could be negative.
-                if (rect._height < 0.0)
+                if (rect.Height < 0.0)
                 {
-                    rect._y += rect._height;
-                    rect._height = -rect._height;
+                    rect.Y += rect.Height;
+                    rect.Height = -rect.Height;
                 }
             }
 
@@ -62,10 +62,10 @@ static class MatrixUtil
             if (0 != (matrixType & MatrixTypes.TRANSFORM_IS_TRANSLATION))
             {
                 // X
-                rect._x += matrix._offsetX;
+                rect.X += matrix._offsetX;
 
                 // Y
-                rect._y += matrix._offsetY;
+                rect.Y += matrix._offsetY;
             }
 
             if (matrixType == MatrixTypes.TRANSFORM_IS_UNKNOWN)
@@ -77,11 +77,11 @@ static class MatrixUtil
                 Point point3 = matrix.Transform(rect.BottomLeft);
 
                 // Width and height is always positive here.
-                rect._x = Math.Min(Math.Min(point0.X, point1.X), Math.Min(point2.X, point3.X));
-                rect._y = Math.Min(Math.Min(point0.Y, point1.Y), Math.Min(point2.Y, point3.Y));
+                rect.X = Math.Min(Math.Min(point0.X, point1.X), Math.Min(point2.X, point3.X));
+                rect.Y = Math.Min(Math.Min(point0.Y, point1.Y), Math.Min(point2.Y, point3.Y));
 
-                rect._width = Math.Max(Math.Max(point0.X, point1.X), Math.Max(point2.X, point3.X)) - rect._x;
-                rect._height = Math.Max(Math.Max(point0.Y, point1.Y), Math.Max(point2.Y, point3.Y)) - rect._y;
+                rect.Width = Math.Max(Math.Max(point0.X, point1.X), Math.Max(point2.X, point3.X)) - rect.X;
+                rect.Height = Math.Max(Math.Max(point0.Y, point1.Y), Math.Max(point2.Y, point3.Y)) - rect.Y;
             }
         }
 
@@ -252,7 +252,7 @@ static class MatrixUtil
         }
     }
 
-static class DoubleUtil
+    internal static class DoubleUtil
     {
         // Const values come from sdk\inc\crt\float.h
         internal const double DBL_EPSILON  =   2.2204460492503131e-016; /* smallest such that 1.0+DBL_EPSILON != 1.0 */
@@ -713,7 +713,7 @@ public partial struct Matrix: IFormattable
 
     // the transform is identity by default
     // Actually fill in the fields - some (internal) code uses the fields directly for perf.
-    static Matrix s_identity = CreateIdentity();
+    private static Matrix s_identity = CreateIdentity();
 
     #region Constructor
 
@@ -1450,7 +1450,7 @@ public partial struct Matrix: IFormattable
     /// </summary>
     /// <param name='offsetX'>The offset in X</param>
     /// <param name='offsetY'>The offset in Y</param>
-    public static Matrix CreateTranslation(double offsetX, double offsetY)
+    internal static Matrix CreateTranslation(double offsetX, double offsetY)
     {
         var matrix = new Matrix();
 
@@ -1462,22 +1462,13 @@ public partial struct Matrix: IFormattable
         return matrix;
     }
 
-    public static Matrix CreateScale(double scaleX, double scaleY)
-    {
-       return new (
-          scaleX, 0,      // M11, M12
-          0,      scaleY, // M21, M22
-          0,      0       // OffsetX, OffsetY
-       );
-    }
-
     #endregion Internal Methods
 
     #region Private Methods
     /// <summary>
     /// Sets the transformation to the identity.
     /// </summary>
-    static Matrix CreateIdentity()
+    private static Matrix CreateIdentity()
     {
         Matrix matrix = new Matrix();
         matrix.SetMatrix(1, 0,
@@ -1494,7 +1485,7 @@ public partial struct Matrix: IFormattable
     ///             \ offsetX, offsetY, 1 /
     /// where offsetX, offsetY is the translation.
     ///</summary>
-    void SetMatrix(double m11, double m12,
+    private void SetMatrix(double m11, double m12,
         double m21, double m22,
         double offsetX, double offsetY,
         MatrixTypes type)
@@ -1511,7 +1502,7 @@ public partial struct Matrix: IFormattable
     /// <summary>
     /// Set the type of the matrix based on its current contents
     /// </summary>
-    void DeriveMatrixType()
+    private void DeriveMatrixType()
     {
         _type = 0;
 
@@ -1545,7 +1536,7 @@ public partial struct Matrix: IFormattable
     /// that coefficients are correct.   
     /// </summary>
     [Conditional("DEBUG")]
-    void Debug_CheckType()
+    private void Debug_CheckType()
     {
         switch(_type)
         {
@@ -1584,7 +1575,7 @@ public partial struct Matrix: IFormattable
     /// true if the the matrix is identity.  If it returns false
     /// the matrix may still be identity.
     /// </summary>
-    bool IsDistinguishedIdentity
+    private bool IsDistinguishedIdentity
     {
         get
         {
@@ -1594,7 +1585,7 @@ public partial struct Matrix: IFormattable
 
     // The hash code for a matrix is the xor of its element's hashes.
     // Since the identity matrix has 2 1's and 4 0's its hash is 0.
-    const int c_identityHashCode = 0;
+    private const int c_identityHashCode = 0;
     
     #endregion Private Properties and Fields
 
@@ -1613,7 +1604,7 @@ public partial struct Matrix: IFormattable
     //
     // Testing note: Validate that this blt will work on 64-bit
     //
-    internal int _padding;
+    internal Int32 _padding;
 #pragma warning restore 0414
 
 

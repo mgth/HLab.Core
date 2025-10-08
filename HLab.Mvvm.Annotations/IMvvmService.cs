@@ -49,4 +49,5 @@ public interface IMvvmService : IService
     Task PrepareViewAsync(IView fe, CancellationToken token = default);
 
     IWindow ViewAsWindow(IView? view);
+    IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new(); 
 }

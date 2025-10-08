@@ -83,7 +83,7 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
             return null;
         }
 
-        // we don't want to cache views cause they cannot be used twice
+        // we don't want to cache views because they cannot be used twice
         if (true || typeof(IView).IsAssignableFrom(linkedType))
         {
             //linkedObject is View

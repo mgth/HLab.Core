@@ -1,31 +1,20 @@
 ﻿using System.Diagnostics;
+using System.Runtime.Intrinsics;
 
-namespace HLab.Geo;
+namespace HLab.Geo.Simd;
 
 /// <summary>
 /// Rect - The primitive which represents a rectangle.  Rects are stored as
 /// X, Y (Location) and Width and Height (Size).  As a result, Rects cannot have negative
 /// Width or Height.
 /// </summary>
-public partial struct Rect
-{
-   /// <summary>
-   /// Constructor which sets the initial values to the values of the parameters
-   /// </summary>
-   public Rect(Point location,
-               Size size)
+public partial struct Rect(Vector256<double> v){
+   public Rect(Vector128<double> position, Vector128<double> size): this(Vector256.Create(position,size)) { }
+
+   public Rect(Point position, Size size): this(position.V, size.V)
    {
-      if (size.IsEmpty)
-      {
-         this = s_empty;
-      }
-      else
-      {
-         _x = location.X;
-         _y = location.Y;
-         _width = size._width;
-         _height = size._height;
-      }
+      if (!size.IsEmpty) return;
+      this = s_empty;
    }
 
    /// <summary>
@@ -35,39 +24,30 @@ public partial struct Rect
    public Rect(double x,
                double y,
                double width,
-               double height)
+               double height):this(Vector256.Create(x, y,width, height))
    {
       if (width < 0 || height < 0)
       {
          throw new System.ArgumentException("SR.Size_WidthAndHeightCannotBeNegative");
       }
-
-      _x = x;
-      _y = y;
-      _width = width;
-      _height = height;
    }
 
    /// <summary>
    /// Constructor which sets the initial values to bound the two points provided.
    /// </summary>
-   public Rect(Point point1,
-               Point point2)
+   public Rect(Point point1, Point point2)
    {
-      _x = Math.Min(point1.X, point2.X);
-      _y = Math.Min(point1.Y, point2.Y);
-
-      //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
-      _width = Math.Max(Math.Max(point1.X, point2.X) - X, 0);
-      _height = Math.Max(Math.Max(point1.Y, point2.Y) - Y, 0);
+      var min = Point.Min(point1, point2);
+      var max = Point.Max(point1, point2);
+      _position = min;
+      _size = (Size)max - min;
    }
 
    /// <summary>
    /// Constructor which sets the initial values to bound the point provided and the point
    /// which results from point + vector.
    /// </summary>
-   public Rect(Point point,
-               Vector vector) : this(point, point + vector)
+   public Rect(Point point, Vector vector) : this(point, point + vector)
    {
    }
 
@@ -77,36 +57,22 @@ public partial struct Rect
    /// </summary>
    public Rect(Size size)
    {
-      if (size.IsEmpty)
-      {
+      if (size.IsEmpty) {
          this = s_empty;
+         return;
       }
-      else
-      {
-         _x = _y = 0;
-         _width = size.Width;
-         _height = size.Height;
-      }
-   }
 
-   #region Statics
+      _position = Point.Zero;
+      _size = size;
+   }
 
    /// <summary>
    /// Empty - a static property which provides an Empty rectangle.  X and Y are positive-infinity
    /// and Width and Height are negative infinity.  This is the only situation where Width or
    /// Height can be negative.
    /// </summary>
-   public static Rect Empty
-   {
-      get
-      {
-         return s_empty;
-      }
-   }
+   public static Rect Empty => s_empty;
 
-   #endregion Statics
-
-   #region Public Properties
 
    /// <summary>
    /// IsEmpty - this returns true if this rect is the Empty rectangle.
@@ -129,12 +95,15 @@ public partial struct Rect
    /// </summary>
    public Point Location
    {
-      get => new(X, Y);
+      get
+      {
+         return new Point(X, Y);
+      }
       set
       {
          if (IsEmpty)
          {
-            throw new InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
+            throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
          }
 
          X = value.X;
@@ -147,7 +116,11 @@ public partial struct Rect
    /// </summary>
    public Size Size
    {
-      get => IsEmpty ? Size.Empty : new(_width, _height);
+      get
+      {
+         if (IsEmpty) return Size.Empty;
+         return _size;
+      }
       set
       {
          if (value.IsEmpty)
@@ -172,18 +145,17 @@ public partial struct Rect
    /// If this is the empty rectangle, the value will be positive infinity.
    /// If this rect is Empty, setting this property is illegal.
    /// </summary>
-   /// <exception cref="InvalidOperationException"></exception>
    public double X
    {
-      get => _x;
+      get => X;
       set
       {
          if (IsEmpty)
          {
-            throw new InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
+            throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
          }
 
-         _x = value;
+         X = value;
       }
    }
 
@@ -194,15 +166,15 @@ public partial struct Rect
    /// </summary>
    public double Y
    {
-      get => _y;
+      get => Y;
       set
       {
          if (IsEmpty)
          {
-            throw new InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
+            throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
          }
 
-         _y = value;
+         Y = value;
       }
    }
 
@@ -213,17 +185,17 @@ public partial struct Rect
    /// </summary>
    public double Width
    {
-      get => _width;
+      get => _size.Width;
       set
       {
          if (IsEmpty)
          {
-            throw new InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
+            throw new System.InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
          }
 
          if (value < 0)
          {
-            throw new ArgumentException("SR.Size_WidthCannotBeNegative");
+            throw new System.ArgumentException("SR.Size_WidthCannotBeNegative");
          }
 
          _width = value;
@@ -235,24 +207,7 @@ public partial struct Rect
    /// be negative if this is the empty rectangle, in which case it will be negative infinity.
    /// If this rect is Empty, setting this property is illegal.
    /// </summary>
-   public double Height
-   {
-      get => _height;
-      set
-      {
-         if (IsEmpty)
-         {
-            throw new InvalidOperationException("SR.Rect_CannotModifyEmptyRect");
-         }
-
-         if (value < 0)
-         {
-            throw new ArgumentException("SR.Size_HeightCannotBeNegative");
-         }
-
-         _height = value;
-      }
-   }
+   public double Height => _size.Height;
 
    /// <summary>
    /// Left Property - This is a read-only alias for X
@@ -279,7 +234,7 @@ public partial struct Rect
             return double.NegativeInfinity;
          }
 
-         return X + _width;
+         return X + _size.Width;
       }
    }
 
@@ -296,7 +251,7 @@ public partial struct Rect
             return double.NegativeInfinity;
          }
 
-         return Y + _height;
+         return Y + _size.Height;
       }
    }
 
@@ -431,42 +386,45 @@ public partial struct Rect
    /// <summary>
    /// Union - Update this rectangle to be the union of this and rect.
    /// </summary>
-   public Rect Union(Rect rect)
+   public void Union(Rect rect)
    {
-      if (IsEmpty) return this;
-
-      if (rect.IsEmpty) return rect;
-      
-      var result = this;
-      var left = Math.Min(Left, rect.Left);
-      var top = Math.Min(Top, rect.Top);
-      double height,width;
-
-      // We need this check so that the math does not result in NaN
-      if ((double.IsPositiveInfinity(rect.Width)) || (double.IsPositiveInfinity(Width)))
+      if (IsEmpty)
       {
-         width = double.PositiveInfinity;
+         this = rect;
       }
-      else
+      else if (!rect.IsEmpty)
       {
-         //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)                    
-         var maxRight = Math.Max(Right, rect.Right);
-         width = Math.Max(maxRight - left, 0);
-      }
+         var left = Math.Min(Left, rect.Left);
+         var top = Math.Min(Top, rect.Top);
 
-      // We need this check so that the math does not result in NaN
-      if ((double.IsPositiveInfinity(rect.Height)) || (double.IsPositiveInfinity(Height)))
-      {
-         height = double.PositiveInfinity;
-      }
-      else
-      {
-         //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
-         var maxBottom = Math.Max(Bottom, rect.Bottom);
-         height = Math.Max(maxBottom - top, 0);
-      }
 
-      return new(left,top,width,height);
+         // We need this check so that the math does not result in NaN
+         if ((rect.Width == Double.PositiveInfinity) || (Width == Double.PositiveInfinity))
+         {
+            _width = double.PositiveInfinity;
+         }
+         else
+         {
+            //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)                    
+            double maxRight = Math.Max(Right, rect.Right);
+            _width = Math.Max(maxRight - left, 0);
+         }
+
+         // We need this check so that the math does not result in NaN
+         if ((rect.Height == Double.PositiveInfinity) || (Height == Double.PositiveInfinity))
+         {
+            _height = Double.PositiveInfinity;
+         }
+         else
+         {
+            //  Max with 0 to prevent double weirdness from causing us to be (-epsilon..0)
+            double maxBottom = Math.Max(Bottom, rect.Bottom);
+            _height = Math.Max(maxBottom - top, 0);
+         }
+
+         _x = left;
+         _y = top;
+      }
    }
 
    /// <summary>
@@ -634,22 +592,21 @@ public partial struct Rect
       MatrixUtil.TransformRect(ref this, ref matrix);
    }
 
+   public Rect Scale(double scaleX, double scaleY) => Scale(Vector128.Create(scaleX, scaleY));
    /// <summary>
    /// Scale the rectangle in the X and Y directions
    /// </summary>
    /// <param name="scaleX"> The scale in X </param>
    /// <param name="scaleY"> The scale in Y </param>
-   public void Scale(double scaleX, double scaleY)
+   public Rect Scale(Vector128<double> scale)
    {
       if (IsEmpty)
       {
-         return;
+         return this;
       }
 
-      _x *= scaleX;
-      _y *= scaleY;
-      _width *= scaleX;
-      _height *= scaleY;
+      var p = _position.V * scale;
+      var w = _size.V * scale;
 
       // If the scale in the X dimension is negative, we need to normalize X and Width
       if (scaleX < 0)
@@ -672,51 +629,13 @@ public partial struct Rect
       }
    }
 
-   #endregion Public Methods
+   bool ContainsInternal(double x, double y) =>
+      ((x >= X) && (x - Width <= X) &&
+       (y >= Y) && (y - Height <= Y));
 
-   #region Private Methods
+   static  Rect CreateEmptyRect() => new(double.PositiveInfinity,double.PositiveInfinity,double.NegativeInfinity,double.NegativeInfinity);
 
-   /// <summary>
-   /// ContainsInternal - Performs just the "point inside" logic
-   /// </summary>
-   /// <returns>
-   /// bool - true if the point is inside the rect
-   /// </returns>
-   /// <param name="x"> The x-coord of the point to test </param>
-   /// <param name="y"> The y-coord of the point to test </param>
-   bool ContainsInternal(double x, double y)
-   {
-      // We include points on the edge as "contained".
-      // We do "x - _width <= X" instead of "x <= X + _width"
-      // so that this check works when _width is PositiveInfinity
-      // and X is NegativeInfinity.
-      return ((x >= _x) && (x - _width <= _x) &&
-              (y >= _y) && (y - _height <= _y));
-   }
-
-   static Rect CreateEmptyRect()
-   {
-      var rect = new Rect
-      {
-         // We can't set these via the property setters because negatives widths
-         // are rejected in those APIs.
-         X = double.PositiveInfinity,
-         Y = double.PositiveInfinity,
-         _width = double.NegativeInfinity,
-         _height = double.NegativeInfinity
-      };
-      return rect;
-   }
-
-   public Rect Translate(Vector vector) => new(X + vector.X, Y + vector.Y, Width, Height);
-
-   #endregion Private Methods
-
-   #region Private Fields
-
-   readonly static Rect s_empty = CreateEmptyRect();
-
-   #endregion Private Fields
+   static readonly Rect s_empty = CreateEmptyRect();
 }
 
 
@@ -816,7 +735,7 @@ partial struct Rect : IFormattable
          return false;
       }
 
-      var value = (Rect)o;
+      Rect value = (Rect)o;
       return Rect.Equals(this, value);
    }
 
@@ -856,112 +775,13 @@ partial struct Rect : IFormattable
                 Height.GetHashCode();
       }
    }
-
-   /// <summary>
-   /// Parse - returns an instance converted from the provided string using
-   /// the culture "en-US"
-   /// <param name="source"> string with Rect data </param>
-   /// </summary>
-   //    public static Rect Parse(string source)
-   //    {
-   //        IFormatProvider formatProvider = System.Windows.Markup.TypeConverterHelper.InvariantEnglishUS;
-
-   //        TokenizerHelper th = new TokenizerHelper(source, formatProvider);
-
-   //        Rect value;
-
-   //String firstToken = th.NextTokenRequired();
-
-   //// The token will already have had whitespace trimmed so we can do a
-   //// simple string compare.
-   //if (firstToken == "Empty")
-   //{
-   //    value = Empty;
-   //}
-   //else
-   //{
-   //    value = new Rect(
-   //        Convert.ToDouble(firstToken, formatProvider),
-   //        Convert.ToDouble(th.NextTokenRequired(), formatProvider),
-   //        Convert.ToDouble(th.NextTokenRequired(), formatProvider),
-   //        Convert.ToDouble(th.NextTokenRequired(), formatProvider));
-   //}
-
-   //// There should be no more tokens in this string.
-   //th.LastTokenRequired();
-
-   //        return value;
-   //    }
-
-   #endregion Public Methods
-
-   //------------------------------------------------------
-   //
-   //  Public Properties
-   //
-   //------------------------------------------------------
-
-
-
-
-   #region Public Properties
-
-
-
-   #endregion Public Properties
-
-   //------------------------------------------------------
-   //
-   //  Protected Methods
-   //
-   //------------------------------------------------------
-
-   #region Protected Methods
-
-
-
-
-
-   #endregion ProtectedMethods
-
-   //------------------------------------------------------
-   //
-   //  Internal Methods
-   //
-   //------------------------------------------------------
-
-   #region Internal Methods
-
-
-
-
-
-
-
-
-
-   #endregion Internal Methods
-
-   //------------------------------------------------------
-   //
-   //  Internal Properties
-   //
-   //------------------------------------------------------
-
-   #region Internal Properties
-
-
    /// <summary>
    /// Creates a string representation of this object based on the current culture.
    /// </summary>
    /// <returns>
    /// A string representation of this object.
    /// </returns>
-   public override string ToString()
-   {
-      // Delegate to the internal method which implements all ToString calls.
-      return ConvertToString(null /* format string */, null /* format provider */);
-   }
+   public override string ToString() => ConvertToString(null /* format string */, null /* format provider */);
 
    /// <summary>
    /// Creates a string representation of this object based on the IFormatProvider
@@ -970,11 +790,7 @@ partial struct Rect : IFormattable
    /// <returns>
    /// A string representation of this object.
    /// </returns>
-   public string ToString(IFormatProvider provider)
-   {
-      // Delegate to the internal method which implements all ToString calls.
-      return ConvertToString(null /* format string */, provider);
-   }
+   public string ToString(IFormatProvider provider) => ConvertToString(null /* format string */, provider);
 
    /// <summary>
    /// Creates a string representation of this object based on the format string
@@ -985,11 +801,7 @@ partial struct Rect : IFormattable
    /// <returns>
    /// A string representation of this object.
    /// </returns>
-   string IFormattable.ToString(string format, IFormatProvider provider)
-   {
-      // Delegate to the internal method which implements all ToString calls.
-      return ConvertToString(format, provider);
-   }
+   string IFormattable.ToString(string format, IFormatProvider provider) => ConvertToString(format, provider);
 
    /// <summary>
    /// Creates a string representation of this object based on the format string
@@ -1008,60 +820,18 @@ partial struct Rect : IFormattable
       }
 
       // Helper to get the numeric list separator for a given culture.
-      var separator = ',';//MS.Internal.TokenizerHelper.GetNumericListSeparator(provider);
-      return string.Format(provider,
+      char separator = ',';//MS.Internal.TokenizerHelper.GetNumericListSeparator(provider);
+      return String.Format(provider,
           "{1:" + format + "}{0}{2:" + format + "}{0}{3:" + format + "}{0}{4:" + format + "}",
           separator,
           X,
           Y,
-          _width,
-          _height);
+          _size.Width,
+          _size.Height);
    }
 
 
 
    #endregion Internal Properties
 
-   //------------------------------------------------------
-   //
-   //  Dependency Properties
-   //
-   //------------------------------------------------------
-
-   #region Dependency Properties
-
-
-
-   #endregion Dependency Properties
-
-   //------------------------------------------------------
-   //
-   //  Internal Fields
-   //
-   //------------------------------------------------------
-
-   #region Internal Fields
-
-
-   internal double _x;
-   internal double _y;
-   internal double _width;
-   internal double _height;
-
-   #endregion Internal Fields
-
-
-
-   #region Constructors
-
-   //------------------------------------------------------
-   //
-   //  Constructors
-   //
-   //------------------------------------------------------
-
-
-
-
-   #endregion Constructors
 }

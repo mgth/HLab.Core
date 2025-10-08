@@ -31,16 +31,32 @@ public static partial class LowLevelMonitorConfiguration
         return false;
     }
 
+    public enum VcpCode : uint
+    {
+       Power = 0xD6,
+       PowerAlternate = 0xE1,
+       InputSource = 0x60,
+       Brightness = 0x10,
+       Contrast = 0x12,
+       RedGain = 0x16,
+       GreenGain = 0x18,
+       BlueGain = 0x1A,
+       RedDrive = 0x52,
+       GreenDrive = 0x54,
+       BlueDrive = 0x56,
+    }
+
+
 
     [DllImport("dxva2.dll", EntryPoint = "GetVCPFeatureAndVCPFeatureReply", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetVCPFeatureAndVCPFeatureReply(
-        [In] nint hMonitor, [In] uint dwVCPCode, out uint pvct, out uint pdwCurrentValue, out uint pdwMaximumValue);
+        [In] nint hMonitor, [In] VcpCode dwVCPCode, out uint pvct, out uint pdwCurrentValue, out uint pdwMaximumValue);
 
 
     [DllImport("dxva2.dll", EntryPoint = "SetVCPFeature", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetVCPFeature(
-        [In] nint hMonitor, uint dwVCPCode, uint dwNewValue);
+        [In] nint hMonitor, VcpCode dwVCPCode, uint dwNewValue);
 
 }
