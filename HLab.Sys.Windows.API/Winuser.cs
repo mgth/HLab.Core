@@ -2618,14 +2618,15 @@ public static partial class WinUser
     }
 
     //2297
-    [LibraryImport("user32.dll")]
-    public static partial int SendMessage(nint hWnd, WindowMessage wMsg, [MarshalAs(UnmanagedType.Bool)] bool wParam, int lParam);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int SendMessage(nint hWnd, WindowMessage wMsg, [MarshalAs(UnmanagedType.Bool)] bool wParam, int lParam);
 
-    [LibraryImport("user32.dll")]
-    public static partial int SendMessage(nint hWnd, WindowMessage wMsg, nint wParam, nint lParam);
+    // /!\ breaks with LibraryImport
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern nint SendMessage(nint hWnd, WindowMessage wMsg, nint wParam, nint lParam);
 
-    [LibraryImport("user32.dll")]
-    public static partial int SendMessage(nint hWnd, WindowMessage wMsg, int wParam, int lParam);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int SendMessage(nint hWnd, WindowMessage wMsg, int wParam, int lParam);
 
 
     public enum PredefinedIcons

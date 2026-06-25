@@ -11,75 +11,84 @@ namespace HLab.Core;
 /// <summary>
 /// 
 /// </summary>
-public class Bootstrapper(Func<IEnumerable<IBootloader>> getBootloaders)
+public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBootstrapper
 {
-    class Context(Bootstrapper bootstrapper, string name, Func<IBootContext,Task> action) : IBootContext
-    {
-        public string Name => name;
+   readonly ConcurrentQueue<Bootloader> _queue = new();
+   readonly HashSet<Bootloader> _completed = [];
+   
+   public async Task BootAsync()
+   {
+      var bl = getBootloaders();
 
+      var bootLoaders = Sort(bl);
 
-        public void Requeue() => bootstrapper.Enqueue(this);
+      foreach (var bootloader in bootLoaders)
+      {
+         bootloader.Bootstrapper = this;
+         _queue.Enqueue(bootloader);
+      }
 
-        public void Enqueue(string name, Func<IBootContext,Task> a) => bootstrapper.Enqueue(name, a);
+      while (_queue.TryDequeue(out var bootloader))
+      {
+         bootloader.State = BootState.Running;
+         bootloader.State = await bootloader.LoadAsync();
+         switch (bootloader.State)
+         {
+            case BootState.Completed:
+               _completed.Add(bootloader);
+               break;
+               
+            case BootState.Failed:
+               throw new Exception($"Bootloader {bootloader.Name} failed");
+               
+            case BootState.Requeue:
+               if (bootloader.LastQueueSize == _queue.Count)
+               {
+                  await bootloader.LoadAsync();
+                  //throw new Exception($"Bootloader {bootloader.Name} is deadlocked");
+               }
+               
+               bootloader.LastQueueSize = _queue.Count;
+               
+               _queue.Enqueue(bootloader);
+               
+               break;
+               
+            case BootState.Cancel:
+               // If the bootloader is cancelled, we just skip it
+               return;
+            case BootState.Running:
+            case BootState.Waiting:
+               // Do nothing, just wait for next iteration
+               break;
+            default:
+               throw new ArgumentOutOfRangeException();
+         }
+      }
+   }
 
-        public Task InvokeAsync() => action(this);
+   static IEnumerable<T> Sort<T>(IEnumerable<T> src)
+   {
+      var result = new List<T>();
+      foreach (var boot in src)
+      {
+         var bootAssemblyName = boot.GetType().Assembly.GetName().Name;
+         for (var i = 0; i < result.Count; i++)
+         {
+            var a = result[i].GetType().Assembly;
+            if (!a.References(bootAssemblyName)) continue;
+            result.Insert(i, boot);
+            goto inserted;
+         }
+         result.Add(boot);
+      inserted:;
+      }
 
-        public bool StillContains(params string[] name) => bootstrapper.Contains(name);
+      return result;
+   }
 
-        public override string ToString() => Name;
-    }
+   //private readonly Dictionary<string, Assembly> _loadedAssemblies = new Dictionary<string, Assembly>();
 
-    readonly ConcurrentQueue<Context> _queue = new();
-    public async Task BootAsync()
-    {
-        var bl = getBootloaders();
-
-        var bootLoaders = Sort(bl);
-
-        HashSet<string> done = new();
-
-        foreach (var bootLoader in bootLoaders)
-        {
-            var name = bootLoader.GetType().FullName;
-            if (done.Contains(name)) continue;
-            Enqueue(name, bs => bootLoader.LoadAsync(bs));
-            done.Add(name);
-        }
-
-        while (_queue.TryDequeue(out var context)) 
-            await context.InvokeAsync();
-    }
-
-    static IEnumerable<T> Sort<T>(IEnumerable<T> src)
-    {
-        var result = new List<T>();
-        foreach (var boot in src)
-        {
-            var bootAssemblyName = boot.GetType().Assembly.GetName().Name;
-            for (var i = 0; i < result.Count; i++)
-            {
-                var a = result[i].GetType().Assembly;
-                if (a.References(bootAssemblyName))
-                {
-                    result.Insert(i, boot);
-                    goto inserted;
-                }
-            }
-            result.Add(boot);
-            inserted:;
-        }
-
-        return result;
-    }
-
-    //private readonly Dictionary<string, Assembly> _loadedAssemblies = new Dictionary<string, Assembly>();
-
-    void Enqueue(Context context) 
-        => _queue.Enqueue(context);
-
-    public void Enqueue(string name, Func<IBootContext,Task> action) 
-        => Enqueue(new Context(this, name, action));
-
-    public bool Contains(params string[] names) 
-        => names.Any(name => _queue.Any(e => e.Name.EndsWith(name)));
+   public bool Contains(params string[] names)
+       => names.Any(name => _queue.Any(e => e.Name.EndsWith(name)));
 }

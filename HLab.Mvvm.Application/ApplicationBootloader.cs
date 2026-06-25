@@ -8,7 +8,7 @@ using HLab.Mvvm.Application.Updater;
 
 namespace HLab.Mvvm.Application;
 
-public abstract class ApplicationBootloader(ApplicationBootloader.Injector injector) : IBootloader
+public abstract class ApplicationBootloader(ApplicationBootloader.Injector injector) : Bootloader
 {
     public IUpdater Updater { get; set; }
 
@@ -47,11 +47,10 @@ public abstract class ApplicationBootloader(ApplicationBootloader.Injector injec
     }
 
 
-
-    public virtual async Task LoadAsync(IBootContext bootstrapper)
+    protected override BootState Load()
     {
-        if (bootstrapper.WaitDependency("LocalizeBootloader")) return;
-        if (bootstrapper.WaitDependency("LoginBootloader")) return;
+        if (WaitingForBootloader("LocalizeBootloader")) return BootState.Requeue;
+        if (WaitingForBootloader("LoginBootloader")) return BootState.Requeue;
 
         injector.Info.Version = Assembly.GetEntryAssembly()?.GetName().Version;
 
@@ -87,6 +86,8 @@ public abstract class ApplicationBootloader(ApplicationBootloader.Injector injec
         injector.Menu.RegisterMenu("help", "{_?}", null, null);
 
         injector.Menu.RegisterMenu("file/exit","{Exit}", ViewModel.Exit,null);
+      
+        return base.Load();
     }
 
 }

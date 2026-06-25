@@ -6,6 +6,7 @@ public interface IDocumentPresenter
 {
     ObservableCollection<object> Documents { get; }
     ObservableCollection<object> Anchorables { get; }
-    object ActiveDocument { get; set; }
+    object? ActiveDocument { get; set; }
+    object? Theme { get; set; }
     bool RemoveDocument(object document);
 }

@@ -34,7 +34,7 @@ public class SuspenderToken : IDisposable
 
     readonly Suspender _suspender;
 #if DEBUG_SUSPENDER
-        public readonly StackTrace StackTrace;
+     public readonly StackTrace StackTrace;
 #endif
 
     public SuspenderToken(Suspender suspender)
@@ -44,30 +44,22 @@ public class SuspenderToken : IDisposable
             StackTrace = new StackTrace(true);
 #endif
     }
-    public void Dispose()
-    {
-        _suspender.Resume(this);
-    }
+   
+    public void Dispose() => _suspender.Resume(this);
 }
-public class Suspender
+
+public class Suspender(Action? suspendedAction = null, Action? resumeAction = null)
 {
     readonly ReaderWriterLockSlim _wLock = new();
-    readonly HashSet<SuspenderToken> _list = new();
-    readonly Action _suspendedAction;
-    readonly Action _resumeAction;
+    readonly HashSet<SuspenderToken> _list = [];
     readonly ConcurrentQueue<Action> _resumeActions = new();
 
-    public Suspender(Action suspendedAction=null, Action resumeAction=null)
-    {
-        _suspendedAction = suspendedAction;
-        _resumeAction = resumeAction;
-    }
     public SuspenderToken Get()
     {
         _wLock.EnterWriteLock();
         try
         {
-            if(_list.Count == 0) _suspendedAction?.Invoke();
+            if(_list.Count == 0) suspendedAction?.Invoke();
             var s = new SuspenderToken(this);
             _list.Add(s);
             return s;
@@ -117,7 +109,7 @@ public class Suspender
             while (_resumeActions.TryDequeue(out var action))
                 action();
 
-            _resumeAction?.Invoke();
+            resumeAction?.Invoke();
         }
 //            catch (Exception)
         {

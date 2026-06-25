@@ -13,10 +13,10 @@ public class OptionsServices : IOptionsService
     public void AddProvider(IOptionsProvider provider)
     {
         _providers.Add(provider);
-        this.ServiceState = ServiceState.Available;
     }
 
     public string OptionsPath { get; set; } = "";
+
     public StreamReader GetOptionFileReader(string name)
     {
         var fileName = Path.Combine(Environment.GetFolderPath(
@@ -125,5 +125,6 @@ public class OptionsServices : IOptionsService
         return default;
     }
 
-    public ServiceState ServiceState { get; private set;} = ServiceState.NotConfigured;
+    public ServiceState ServiceState =>  (_providers.Count > 0 && !string.IsNullOrEmpty(OptionsPath))?ServiceState.Available:ServiceState.NotConfigured;
+
 }
