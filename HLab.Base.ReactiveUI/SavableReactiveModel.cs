@@ -29,8 +29,9 @@ public abstract class SavableReactiveModel : ReactiveModel, ISavable
         return true;
     }
 
-    public virtual void Save()
-    {
-        Saved = true;
-    }
+    // NOTE: intentionally NO parameterless Save() here.
+    // Persistence is provided by extension methods (e.g. PersistencyExtensions.Save(this MonitorsLayout)),
+    // which both write storage and reset the child Saved flags. A parameterless instance Save() on this
+    // base would shadow those extensions at every `x.Save()` call site (instance methods win over
+    // extension methods in overload resolution), silently turning persistence into a no-op.
 }
