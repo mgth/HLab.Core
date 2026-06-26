@@ -257,8 +257,6 @@ public class MvvmService : IMvvmService
       return _platform.GetNotFoundViewAsync(getType, viewMode, viewClass, token);
    }
 
-   public Task PrepareViewAsync(IView view, CancellationToken token = default) => Platform.PrepareViewAsync(view, token);
-
     public Task PrepareViewAsync(IView view, CancellationToken token = default) => _platform.PrepareViewAsync(view, token);
     public IWindow ViewAsWindow(IView? view) => _platform.ViewAsWindow(view);
     public IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new()  => _platform.ViewAsWindow<T>(view);
