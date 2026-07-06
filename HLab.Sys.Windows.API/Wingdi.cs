@@ -50,6 +50,12 @@ public static partial class WinGdi
     //[DllImport("user32.dll")]
     public static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, ref DisplayDevice lpDisplayDevice, uint dwFlags);
 
+    /// <summary>
+    /// EnumDisplayDevices flag: DeviceID receives the device interface path
+    /// (\\?\DISPLAY#...) instead of the legacy id — the identity used by the CCD API.
+    /// </summary>
+    public const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x00000001;
+
     [Flags()]
     public enum DisplayModeFlags : int
     {
