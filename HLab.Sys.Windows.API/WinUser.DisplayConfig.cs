@@ -20,6 +20,7 @@ public static partial class WinUser
 
     public const uint DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME = 1;
     public const uint DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2;
+    public const uint DISPLAYCONFIG_DEVICE_INFO_GET_MONITOR_SPECIALIZATION = 12;
 
     [Flags]
     public enum SetDisplayConfigFlags : uint
@@ -126,6 +127,24 @@ public static partial class WinUser
         public string ViewGdiDeviceName;
     }
 
+    /// <summary>
+    /// Specialized monitors (VR headsets like Windows Mixed Reality...) are driven by
+    /// dedicated runtimes and excluded from the regular desktop: Windows hides them
+    /// from the display settings. Query is unsupported before Windows 11: callers must
+    /// treat a non-zero return as "not specialized".
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DisplayConfigGetMonitorSpecialization
+    {
+        public uint Type;
+        public uint Size;
+        public Luid AdapterId;
+        public uint Id;
+        public uint Value;
+
+        public readonly bool IsSpecializationEnabled => (Value & 1) != 0;
+    }
+
     [DllImport("user32.dll")]
     public static extern int GetDisplayConfigBufferSizes(uint flags, ref uint numPathArrayElements, ref uint numModeInfoArrayElements);
 
@@ -144,4 +163,7 @@ public static partial class WinUser
 
     [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")]
     public static extern int DisplayConfigGetDeviceInfo(ref DisplayConfigSourceDeviceName requestPacket);
+
+    [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")]
+    public static extern int DisplayConfigGetDeviceInfo(ref DisplayConfigGetMonitorSpecialization requestPacket);
 }
