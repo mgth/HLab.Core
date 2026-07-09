@@ -14,6 +14,13 @@ public interface IUserNotificationService
 
     public string ToolTipText { get; set; }
     void Show();
+
+    /// <summary>
+    /// Show or hide the tray icon. Implemented natively by the platform (Avalonia's
+    /// <c>TrayIcon.IsVisible</c>), so no per-OS code is needed here; icon updates are held while
+    /// hidden so a state-change refresh can't re-show it.
+    /// </summary>
+    bool Visible { get; set; }
 }
 
 
