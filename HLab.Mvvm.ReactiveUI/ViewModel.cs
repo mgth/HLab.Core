@@ -1,4 +1,4 @@
-﻿/*
+/*
   HLab.Mvvm
   Copyright (c) 2021 Mathieu GRENET.  All right reserved.
 
@@ -22,7 +22,6 @@
 */
 
 
-using System.Runtime.CompilerServices;
 using HLab.Base.ReactiveUI;
 using HLab.Mvvm.Annotations;
 using ReactiveUI;
@@ -38,6 +37,13 @@ public abstract class ViewModel : ReactiveModel
     readonly Lazy<int> _id = new(() => Interlocked.Increment(ref _lastId));
 
     public int Id => _id.Value;
+
+    public IMvvmContext? MvvmContext
+    {
+        get => _mvvmContext;
+        set => this.RaiseAndSetIfChanged(ref _mvvmContext, value);
+    }
+    IMvvmContext? _mvvmContext;
 }
 
 public abstract class ViewModel<T> : ViewModel, IViewModel<T> where T : class
@@ -45,7 +51,7 @@ public abstract class ViewModel<T> : ViewModel, IViewModel<T> where T : class
     object? IViewModel.Model
     {
         get => Model;
-        set => Model = Unsafe.As<T?>(value);
+        set => Model = (T?)value;
     }
 
     public T? Model
@@ -68,6 +74,4 @@ public abstract class ViewModel<T> : ViewModel, IViewModel<T> where T : class
     {
         return newModel;
     }
-
-    public Type ModelType => typeof(T);
 }

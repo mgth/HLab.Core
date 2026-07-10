@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\HLab.Base\HLab.Base.csproj" />
     <ProjectReference Include="..\HLab.Core.Annotations\HLab.Core.Annotations.csproj" />
   </ItemGroup>

@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using HLab.Base;
 using HLab.Core.Annotations;
@@ -17,28 +16,18 @@ public class MvvmService : IMvvmService
 {
    public class Bootloader(IMvvmService mvvm) : Core.Annotations.Bootloader
    {
-      public override async Task<BootState> LoadAsync()
+      public override Task<BootState> LoadAsync()
       {
-         if (!mvvm.IsPlatformRegistered) return BootState.Requeue;
-         
-         await mvvm.RegisterAsync();
-         return await base.LoadAsync();
-      }
-   }
-   
-   
-   readonly IMessagesService _messageBus;
-   IMvvmPlatformImpl? _platform;
-   IMvvmPlatformImpl Platform
-   {
-      get
-      {
-         CheckPlatformRegistered();
-         return _platform;
+         if (!mvvm.IsPlatformRegistered) return Task.FromResult(BootState.Requeue);
+
+         mvvm.Register();
+         return base.LoadAsync();
       }
    }
 
-   readonly string _assemblyName = Assembly.GetAssembly(typeof(IView))?.GetName().Name ?? "";
+
+   readonly IMessagesService _messageBus;
+   IMvvmPlatformImpl? _platform;
 
    readonly ConcurrentDictionary<Type, MvvmBaseEntry> _entries = new();
 
@@ -79,7 +68,7 @@ public class MvvmService : IMvvmService
          throw new InvalidOperationException("Platform not registered");
       }
    }
-   
+
    /// <summary>
    /// The main context of the application
    /// </summary>
@@ -90,9 +79,8 @@ public class MvvmService : IMvvmService
 
    public HelperFactory<IViewHelper> ViewHelperFactory { get; } = new();
 
-   public async Task<Type> GetLinkedTypeAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default)
+   public Type? GetLinkedType(Type getType, Type viewMode, Type viewClass)
    {
-
       if (getType.IsConstructedGenericType)
       {
          getType = getType.GetGenericTypeDefinition();
@@ -100,13 +88,13 @@ public class MvvmService : IMvvmService
 
       if (_entries.TryGetValue(getType, out var best))
       {
-         var result = await best.GetLinkedAsync(viewClass, viewMode, token);
+         var result = best.GetLinked(viewClass, viewMode);
          if (result.LinkedType != null)
             return result.LinkedType;
       }
 
       var level = int.MaxValue;
-      Type linkedType = null;
+      Type? linkedType = null;
       var select = _entries.Where(e => e.Key.IsAssignableFrom(getType));
       foreach (var entry in select)
       {
@@ -116,7 +104,7 @@ public class MvvmService : IMvvmService
 
          if (l >= level) continue;
 
-         var lt = (await entry.Value.GetLinkedAsync(viewClass, viewMode, token)).LinkedType;
+         var lt = entry.Value.GetLinked(viewClass, viewMode).LinkedType;
          if (lt == null) continue;
 
          linkedType = lt;
@@ -126,18 +114,19 @@ public class MvvmService : IMvvmService
       if (linkedType != null) return linkedType;
 
       var baseMode = viewMode.BaseType;
-      if (baseMode == typeof(ViewMode)) return null;
-      linkedType = await GetLinkedTypeAsync(getType, baseMode, viewClass, token);
-      await RegisterAsync(getType, linkedType, viewClass, viewMode);
+      if (baseMode == typeof(ViewMode) || baseMode == null) return null;
+
+      linkedType = GetLinkedType(getType, baseMode, viewClass);
+      if (linkedType != null)
+         Register(getType, linkedType, viewClass, viewMode);
       return linkedType;
    }
 
    /// <summary>
-   /// Register all assemblies referencing this (HLab.Mvvm).
+   /// Register views from all loaded assemblies.
    /// </summary>
-   public virtual async Task RegisterAsync()
+   public virtual void Register()
    {
-
       CheckPlatformRegistered();
 
       _platform.Register(this);
@@ -146,7 +135,7 @@ public class MvvmService : IMvvmService
       _perAssemblyProgress = 1.0 / assemblies.Count;
       foreach (var assembly in assemblies)
       {
-         await RegisterAsync(assembly);
+         Register(assembly);
       }
 
       ServiceState = ServiceState.Available;
@@ -155,11 +144,10 @@ public class MvvmService : IMvvmService
    double _perAssemblyProgress = 0.0;
    double _progress = 0.0;
 
-   async Task RegisterAsync(Assembly assembly)
+   void Register(Assembly assembly)
    {
       // Find all views and register it
       var views = assembly.GetTypesSafe().Where(t => typeof(IView).IsAssignableFrom(t)).ToList();
-
 
       if (views.Count == 0)
       {
@@ -189,11 +177,11 @@ public class MvvmService : IMvvmService
                if (viewClasses.Count > 0)
                {
                   foreach (var cls in viewClasses)
-                     await RegisterAllAsync(baseType, viewType, cls, viewMode);
+                     RegisterAll(baseType, viewType, cls, viewMode);
                }
                else
                {
-                  await RegisterAllAsync(baseType, viewType, typeof(IDefaultViewClass), viewMode);
+                  RegisterAll(baseType, viewType, typeof(IDefaultViewClass), viewMode);
                }
             }
 
@@ -202,24 +190,24 @@ public class MvvmService : IMvvmService
       }
    }
 
-   public async Task RegisterAllAsync(
+   public void RegisterAll(
        Type baseType
        , Type linkedType
        , Type viewClass
        , Type viewMode
    )
    {
-      await RegisterAsync(baseType, linkedType, viewClass, viewMode);
+      Register(baseType, linkedType, viewClass, viewMode);
 
       var basesTypes = AllAssemblies().SelectMany(a => a.GetTypesSafe().Where(baseType.IsAssignableFrom).Where(t => !t.IsAssignableFrom(baseType)).Where(t => !typeof(IDesignViewModel).IsAssignableFrom(t)));
       var linkedTypes = AllAssemblies().SelectMany(a => a.GetTypesSafe().Where(linkedType.IsAssignableFrom)).ToList();
 
       foreach (var bt in basesTypes)
          foreach (var lt in linkedTypes)
-            await RegisterAsync(bt, lt, viewClass, viewMode);
+            Register(bt, lt, viewClass, viewMode);
    }
 
-   public async Task RegisterAsync(Type baseType, Type linkedType, Type viewClass, Type viewMode)
+   public void Register(Type baseType, Type linkedType, Type viewClass, Type viewMode)
    {
       CheckPlatformRegistered();
       var type = baseType;
@@ -250,23 +238,34 @@ public class MvvmService : IMvvmService
       }
    }
 
-   public Task<IView> GetNotFoundViewAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default)
+   public IView GetNotFoundView(Type getType, Type viewMode, Type viewClass)
    {
       CheckPlatformRegistered();
-      return _platform.GetNotFoundViewAsync(getType, viewMode, viewClass, token);
+      return _platform.GetNotFoundView(getType, viewMode, viewClass);
    }
 
-    public Task PrepareViewAsync(IView view, CancellationToken token = default) => _platform.PrepareViewAsync(view, token);
-    public IWindow ViewAsWindow(IView? view) => _platform.ViewAsWindow(view);
-    public IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new()  => _platform.ViewAsWindow<T>(view);
+   public void PrepareView(IView view)
+   {
+      CheckPlatformRegistered();
+      _platform.PrepareView(view);
+   }
 
+   public IWindow ViewAsWindow(IView? view)
+   {
+      CheckPlatformRegistered();
+      return _platform.ViewAsWindow(view);
+   }
+
+   public IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new()
+   {
+      CheckPlatformRegistered();
+      return _platform.ViewAsWindow<T>(view);
+   }
 
    /// <summary>
    /// Get all ViewClass assigned to a specific type
    /// </summary>
-   /// <param name="type"></param>
-   /// <returns></returns>
-   static IEnumerable<Type> GetViewClasses(Type type) 
+   static IEnumerable<Type> GetViewClasses(Type type)
         => type
             .GetInterfaces()
             .Where(i => typeof(IViewClass).IsAssignableFrom(i) && typeof(IViewClass) != i);
@@ -277,14 +276,10 @@ public class MvvmService : IMvvmService
    /// <summary>
    /// return Model type from IViewModel&lt;TModel&gt;
    /// </summary>
-   /// <param name="type"></param>
-   /// <param name="modelType"></param>
-   /// <returns></returns>
    bool GetModelType(Type type, out Type? modelType)
    {
       modelType = _modelsTypes.GetOrAdd(type, (t) =>
       {
-         //if (!typeof(IViewModel).IsAssignableFrom(type)) return null; //throw new ArgumentException(type + " does not implement IViewModel");
          foreach (var @interface in t.GetInterfaces())
          {
             if (!@interface.IsGenericType) continue;
@@ -330,24 +325,30 @@ public class MvvmService : IMvvmService
 
       public void Register(Type linkedType, Type viewClass, Type viewMode)
       {
-         _list.Add(new MvvmLinkedEntry(linkedType, viewClass, viewMode));
+         lock (_list)
+         {
+            _list.Add(new MvvmLinkedEntry(linkedType, viewClass, viewMode));
+         }
       }
 
-      public async Task<MvvmLinkedEntry> GetLinkedAsync(Type? viewClass, Type? viewMode, CancellationToken token = default)
+      public MvvmLinkedEntry GetLinked(Type? viewClass, Type? viewMode)
       {
          viewClass ??= typeof(IDefaultViewClass);
          viewMode ??= typeof(DefaultViewMode);
 
          var result = new MvvmLinkedEntry();
-         foreach (var e in _list
-                      .Where(e => e.ViewClass.IsAssignableFrom(viewClass))
-                      .Where(e => e.ViewMode.IsAssignableFrom(viewMode)))
+         lock (_list)
          {
-            if (result.LinkedType == null) { result = e; continue; } // initial
+            foreach (var e in _list
+                         .Where(e => e.ViewClass.IsAssignableFrom(viewClass))
+                         .Where(e => e.ViewMode.IsAssignableFrom(viewMode)))
+            {
+               if (result.LinkedType == null) { result = e; continue; } // initial
 
-            if (result.ViewClass != null && result.ViewClass.IsAssignableFrom(e.ViewClass)) { result = e; continue; } // better viewClass
+               if (result.ViewClass != null && result.ViewClass.IsAssignableFrom(e.ViewClass)) { result = e; continue; } // better viewClass
 
-            // TODO : deal with better ViewMode
+               // TODO : deal with better ViewMode
+            }
          }
 
          return result;

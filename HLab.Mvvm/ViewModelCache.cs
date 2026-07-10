@@ -22,15 +22,13 @@
 */
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using HLab.Mvvm.Annotations;
 
 namespace HLab.Mvvm;
 
 public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
 {
-    public async Task<object?> GetLinkedAsync(object? baseObject, Type viewMode, Type viewClass, CancellationToken token = default)
+    public object? GetLinked(object? baseObject, Type viewMode, Type viewClass)
     {
         //We cannot retrieve a view for a null object
         if (baseObject == null) return null;
@@ -54,14 +52,14 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
                 context1 = vm.MvvmContext;
         }
 
-        var linkedType = await mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass, token);
+        var linkedType = mvvm.GetLinkedType(baseObject.GetType(), viewMode, viewClass);
 
         if (linkedType == null) return null;
 
         return context1.Locate(linkedType, baseObject);
     }
 
-    public async Task<IView?> GetViewAsync(object? baseObject, Type? viewMode, Type? viewClass, CancellationToken token = default)
+    public IView? GetView(object? baseObject, Type? viewMode, Type? viewClass)
     {
         //TODO : find a solution to identify baseObject type when it's null and retrieve an empty view
         if (baseObject == null) return null;
@@ -71,28 +69,20 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
 
         while (true)
         {
-            try
+            var linked = GetLinked(baseObject, viewMode, viewClass);
+
+            switch (linked)
             {
-                var linked = await GetLinkedAsync(baseObject, viewMode, viewClass, token);
-                if (token.IsCancellationRequested) return null;
+                case null:
+                    return mvvm.GetNotFoundView(baseObject.GetType(), viewMode, viewClass);
 
-                switch (linked)
-                {
-                    case null:
-                        return await mvvm.GetNotFoundViewAsync(baseObject.GetType(), viewMode, viewClass, token);
+                case IView fe:
+                    mvvm.PrepareView(fe);
+                    return fe;
 
-                    case IView fe:
-                        await mvvm.PrepareViewAsync(fe, token);
-                        return fe;
-
-                    default:
-                        baseObject = linked;
-                        break;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                return null;
+                default:
+                    baseObject = linked;
+                    break;
             }
         }
     }

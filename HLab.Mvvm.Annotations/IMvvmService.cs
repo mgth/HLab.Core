@@ -1,4 +1,4 @@
-﻿/*
+/*
   HLab.Mvvm
   Copyright (c) 2021 Mathieu GRENET.  All right reserved.
 
@@ -22,26 +22,29 @@
 */
 
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using HLab.Core.Annotations;
 
 namespace HLab.Mvvm.Annotations;
 
+/// <summary>
+/// View resolution registry. Lookups are pure CPU work : the whole surface is
+/// synchronous, view instantiation is expected to happen on the UI thread.
+/// </summary>
 public interface IMvvmService : IService
 {
     void RegisterPlatform<T>() where T:IMvvmPlatformImpl;
     bool IsPlatformRegistered { get; }
-   IMvvmContext MainContext { get; }
+    IMvvmContext MainContext { get; }
     HelperFactory<IViewHelper> ViewHelperFactory { get; }
-    Task<Type?> GetLinkedTypeAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default);
 
-    Task RegisterAsync();
-    Task RegisterAsync(Type baseType, Type type, Type viewMode, Type viewClass);
+    Type? GetLinkedType(Type getType, Type viewMode, Type viewClass);
 
-    Task<IView> GetNotFoundViewAsync(Type getType, Type viewMode, Type viewClass, CancellationToken token = default);
-    Task PrepareViewAsync(IView fe, CancellationToken token = default);
+    void Register();
+    void Register(Type baseType, Type linkedType, Type viewClass, Type viewMode);
+
+    IView GetNotFoundView(Type getType, Type viewMode, Type viewClass);
+    void PrepareView(IView view);
 
     IWindow ViewAsWindow(IView? view);
-    IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new(); 
+    IWindow ViewAsWindow<T>(IView? view) where T: IWindow, new();
 }
