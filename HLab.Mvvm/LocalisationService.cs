@@ -136,7 +136,7 @@ public partial class LocalizationService : ILocalizationService, IService
 
     public void Set(CultureInfo info)
     {
-        throw new NotImplementedException();
+        Culture = info;
     }
 
     public void Register(ILocalizationProvider service)

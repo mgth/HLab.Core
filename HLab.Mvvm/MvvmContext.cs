@@ -91,14 +91,11 @@ public class MvvmContext : IMvvmContext//, IInitializer
     public Task<IView?> GetViewAsync(object? baseObject, Type viewMode, Type viewClass, CancellationToken token = default)
         => _cache.GetViewAsync(baseObject, viewMode, viewClass, token);
 
-    //private readonly Func<Type, object> _locate ;
-    public T Locate<T>(object baseObject = null) 
+    public T Locate<T>(object baseObject = null)
         => (T)Locate(typeof(T), baseObject);
 
-
-    public object? Locate(Type type, object baseObject = null) 
-        =>
-            Locate(() => _mvvm.LocateFunc?.Invoke(type), baseObject); // _locateFunc();
+    public object? Locate(Type type, object baseObject = null)
+        => Locate(() => _mvvm.LocateFunc?.Invoke(type), baseObject);
 
     public T Locate<T>(Func<T> locate, object baseObject = null) 
         => (T)Locate(new Func<object>(() => locate()), baseObject);
@@ -127,16 +124,6 @@ public class MvvmContext : IMvvmContext//, IInitializer
                 CallCreators(vm);
                 break;
         }
-        if (baseObject is IViewModel vmb)
-        {
-            vmb.SetLinked(obj);
-        }
         return obj;
     }
-
-    // TODO : missing
-    //public void Initialize(IRuntimeImportContext ctx, object[] args)
-    //{
-    //    Mvvm = ctx.GetTarget<IMvvmService>();
-    //}
 }

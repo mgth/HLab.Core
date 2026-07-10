@@ -1,4 +1,4 @@
-﻿/*
+/*
   HLab.Mvvm
   Copyright (c) 2021 Mathieu GRENET.  All right reserved.
 
@@ -22,8 +22,6 @@
 */
 
 using System;
-using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using HLab.Mvvm.Annotations;
@@ -32,111 +30,37 @@ namespace HLab.Mvvm;
 
 public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
 {
-    class LinkedViewModels
-    {
-        readonly ConcurrentDictionary<Type, object?> _linked = new();
-
-        public object? GetOrAdd(Type type, Func<Type, object?> factory)
-        {
-            return _linked.GetOrAdd(type, factory);
-        }
-    }
-
-
-//        private readonly ConditionalWeakTable<object, object> _linked = new ConditionalWeakTable<object, object>();
-    //private readonly ConcurrentDictionary<Type, ConcurrentQueue<Action<object>>> _creators;
-
-
-    readonly ConditionalWeakTable<object, LinkedViewModels> _linked = new();
-
-    //private readonly Type _viewMode;
-
-    public async Task<object?> GetLinkedAsync(object? baseObject,Type viewMode, Type viewClass, CancellationToken token = default)
+    public async Task<object?> GetLinkedAsync(object? baseObject, Type viewMode, Type viewClass, CancellationToken token = default)
     {
         //We cannot retrieve a view for a null object
-        if(baseObject==null) return null;
+        if (baseObject == null) return null;
 
         var context1 = context;
-        { 
-            if (baseObject is IViewModel vm)
+
+        if (baseObject is IViewModel vm)
+        {
+            // if the viewModel was created outside, it may not contain a context
+            if (vm.MvvmContext == null)
             {
-                // if the viewModel was created outside, it may not contain a context
-                if(vm.MvvmContext==null)
+                if (vm is IMvvmContextProvider p)
                 {
-                    if (vm is IMvvmContextProvider p)
-                    {
-                        context1 = context1.GetChildContext(p.GetType().Name);
-                        p.ConfigureMvvmContext(context1);
-                        vm.MvvmContext = context1;
-                    }
-                    vm.MvvmContext = context1;
+                    context1 = context1.GetChildContext(p.GetType().Name);
+                    p.ConfigureMvvmContext(context1);
                 }
-                else
-                    // set current context to be the view model one
-                    context1 = vm.MvvmContext;
+                vm.MvvmContext = context1;
             }
+            else
+                // set current context to be the view model one
+                context1 = vm.MvvmContext;
         }
+
         var linkedType = await mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass, token);
 
-        if (linkedType == null)
-        {
-            return null;
-        }
+        if (linkedType == null) return null;
 
-        // we don't want to cache views because they cannot be used twice
-        if (true || typeof(IView).IsAssignableFrom(linkedType))
-        {
-            //linkedObject is View
-            return context1.Locate(linkedType, baseObject);
-        }
-
-        // baseObject is ViewModel
-        var cache = _linked.GetOrCreateValue(baseObject);
-        return cache.GetOrAdd(linkedType, (t) => context1.Locate(t, baseObject));
+        return context1.Locate(linkedType, baseObject);
     }
 
-    //public async Task<object?> GetLinkedAsync(object? baseObject,Type viewMode, Type viewClass)
-    //{
-    //    if(baseObject==null) return null;
-
-    //    var context1 = context;
-    //    { 
-    //        if (baseObject is IViewModel vm)
-    //        {
-    //            // if the viewModel was created outside, it may not contain a context
-    //            if(vm.MvvmContext==null)
-    //            {
-    //                if (vm is IMvvmContextProvider p)
-    //                {
-    //                    context1 = context1.GetChildContext(p.GetType().Name);
-    //                    p.ConfigureMvvmContext(context1);
-    //                    vm.MvvmContext = context1;
-    //                }
-    //                vm.MvvmContext = context1;
-    //            }
-    //            else
-    //                // set current context to be the view model one
-    //                context1 = vm.MvvmContext;
-    //        }
-    //    }
-    //    var linkedType = await mvvm.GetLinkedTypeAsync(baseObject.GetType(), viewMode, viewClass);
-
-    //    if (linkedType == null)
-    //    {
-    //        return null;
-    //    }
-
-    //    // we don't want to cache views cause they cannot be used twice
-    //    if (typeof(IView).IsAssignableFrom(linkedType))
-    //    {
-    //        //linkedObject is View
-    //        return context1.Locate(linkedType, baseObject);
-    //    }
-
-    //    // baseObject is ViewModel
-    //    var cache = _linked.GetOrCreateValue(baseObject);
-    //    return cache.GetOrAdd(linkedType, (t) => context1.Locate(t, baseObject));
-    //}
     public async Task<IView?> GetViewAsync(object? baseObject, Type? viewMode, Type? viewClass, CancellationToken token = default)
     {
         //TODO : find a solution to identify baseObject type when it's null and retrieve an empty view
@@ -165,26 +89,11 @@ public class ViewModelCache(IMvvmContext context, IMvvmService mvvm)
                         baseObject = linked;
                         break;
                 }
-
             }
-            catch (Exception e)
+            catch (OperationCanceledException)
             {
-                if (e is OperationCanceledException)
-                {
-                    return null;
-                }
-                else
-                {
-                    throw;
-                }
+                return null;
             }
         }
     }
-
-    // TODO 
-    //public event DependencyPropertyChangedEventHandler ViewDataContextChanged;
-    //private void View_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-    //{
-    //    ViewDataContextChanged?.Invoke(sender, e);
-    //}
 }

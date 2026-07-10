@@ -25,7 +25,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace HLab.Base;
+namespace HLab.Mvvm.Annotations;
 
 public class HelperFactory<T>
     where T : class

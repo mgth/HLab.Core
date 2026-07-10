@@ -24,15 +24,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using HLab.Base;
 using HLab.Core.Annotations;
 
-
-////using System.Data.Model;
-
 namespace HLab.Mvvm.Annotations;
-
-//TODO : should not reference HLab.Base
 
 public interface IMvvmService : IService
 {

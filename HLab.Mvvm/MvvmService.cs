@@ -142,7 +142,6 @@ public class MvvmService : IMvvmService
 
       _platform.Register(this);
 
-      //var assemblies = AssemblyHelper.GetReferencingAssemblies(_assemblyName).ToList();
       var assemblies = AssemblyHelper.GetAssemblies().ToList();
       _perAssemblyProgress = 1.0 / assemblies.Count;
       foreach (var assembly in assemblies)
@@ -306,7 +305,7 @@ public class MvvmService : IMvvmService
 
    static IEnumerable<Assembly> AllAssemblies()
    {
-      return AppDomain.CurrentDomain.GetAssemblies()/*.Where(a => a.GetReferencedAssemblies().Any(e => e.Name == "Mvvm"))*/;
+      return AppDomain.CurrentDomain.GetAssemblies();
    }
 
 
@@ -348,11 +347,7 @@ public class MvvmService : IMvvmService
 
             if (result.ViewClass != null && result.ViewClass.IsAssignableFrom(e.ViewClass)) { result = e; continue; } // better viewClass
 
-
             // TODO : deal with better ViewMode
-            if (result.ViewMode != null && result.ViewMode.IsAssignableFrom(e.ViewMode)) { } // better viewMode
-
-            if (result.ViewMode != null && result.ViewMode.IsAssignableFrom(e.ViewMode)) { } // better linked type
          }
 
          return result;
