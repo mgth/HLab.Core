@@ -74,7 +74,14 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
             {
 
                 writer.AutoFlush = true;
-                writer.WriteLine("""<CommandMessage Command="Listen" Payload=""/>""");
+                try
+                {
+                    writer.WriteLine("""<CommandMessage Command="Listen" Payload=""/>""");
+                }
+                catch (IOException)
+                {
+                    // Connection died between connect and subscribe: retry from scratch.
+                }
 
                 while (client.Connected)
                 {
@@ -82,8 +89,14 @@ public class RemoteClientSocket(string hostname, int port) : IRemoteClient
                     {
                         var msg = reader.ReadLine();
 
-                        if (msg != null)
-                            _ = Task.Run(() => MessageReceived?.Invoke(this, msg));
+                        // EOF: the daemon closed (or died — the OS sends the FIN either
+                        // way). client.Connected can stay true after a graceful EOF, so
+                        // looping on it spins on null reads forever and the reconnect
+                        // loop below is never reached — the daemon was never relaunched
+                        // after dying while connected.
+                        if (msg == null) break;
+
+                        _ = Task.Run(() => MessageReceived?.Invoke(this, msg));
                     }
                     catch (ObjectDisposedException)
                     {
