@@ -52,6 +52,7 @@ public class DesktopWallpaperClass
 public interface IDesktopWallpaper
 {
 
+    [PreserveSig]
     HResult SetWallpaper([MarshalAs(UnmanagedType.LPWStr)] string monitorId, [MarshalAs(UnmanagedType.LPWStr)] string wallpaper);
     [PreserveSig]
     HResult GetWallpaper([MarshalAs(UnmanagedType.LPWStr)] string monitorId, [MarshalAs(UnmanagedType.LPWStr)] ref string wallpaper);
@@ -62,10 +63,12 @@ public interface IDesktopWallpaper
     [PreserveSig]
     HResult GetMonitorRECT([MarshalAs(UnmanagedType.LPWStr)] string monitorId, [MarshalAs(UnmanagedType.Struct)] ref WinDef.Rect displayRect);
 
+    [PreserveSig]
     HResult SetBackgroundColor(uint color);
 
     [PreserveSig]
     HResult GetBackgroundColor(ref uint color);
+    [PreserveSig]
     HResult SetPosition(DesktopWallpaperPosition position);
 
     [PreserveSig]
