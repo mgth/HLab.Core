@@ -31,8 +31,11 @@ public class MvvmService : IMvvmService
 
    readonly ConcurrentDictionary<Type, MvvmBaseEntry> _entries = new();
 
-
-   public IMvvmContext GetNewContext(IMvvmContext parent, string name) => new MvvmContext(parent, name, this);
+   /// <summary>
+   /// Memoized lookups : resolution climbs type and view-mode hierarchies, the
+   /// result never changes once every assembly is registered. Cleared on Register.
+   /// </summary>
+   readonly ConcurrentDictionary<(Type getType, Type viewMode, Type viewClass), Type?> _linkedTypeCache = new();
 
    public MvvmService(
        IMessagesService messageBus,
@@ -86,6 +89,13 @@ public class MvvmService : IMvvmService
          getType = getType.GetGenericTypeDefinition();
       }
 
+      return _linkedTypeCache.GetOrAdd((getType, viewMode, viewClass),
+         k => ResolveLinkedType(k.getType, k.viewMode, k.viewClass));
+   }
+
+   Type? ResolveLinkedType(Type getType, Type viewMode, Type viewClass)
+   {
+      // exact registration
       if (_entries.TryGetValue(getType, out var best))
       {
          var result = best.GetLinked(viewClass, viewMode);
@@ -93,10 +103,10 @@ public class MvvmService : IMvvmService
             return result.LinkedType;
       }
 
+      // closest registered base type or interface
       var level = int.MaxValue;
       Type? linkedType = null;
-      var select = _entries.Where(e => e.Key.IsAssignableFrom(getType));
-      foreach (var entry in select)
+      foreach (var entry in _entries.Where(e => e.Key.IsAssignableFrom(getType)))
       {
          var t = getType;
          var l = 0;
@@ -113,17 +123,16 @@ public class MvvmService : IMvvmService
 
       if (linkedType != null) return linkedType;
 
+      // fall back to the parent view mode
       var baseMode = viewMode.BaseType;
       if (baseMode == typeof(ViewMode) || baseMode == null) return null;
 
-      linkedType = GetLinkedType(getType, baseMode, viewClass);
-      if (linkedType != null)
-         Register(getType, linkedType, viewClass, viewMode);
-      return linkedType;
+      return ResolveLinkedType(getType, baseMode, viewClass);
    }
 
    /// <summary>
-   /// Register views from all loaded assemblies.
+   /// Register views from every loaded assembly that can contain some : an
+   /// assembly implementing IView necessarily references HLab.Mvvm.Annotations.
    /// </summary>
    public virtual void Register()
    {
@@ -131,8 +140,8 @@ public class MvvmService : IMvvmService
 
       _platform.Register(this);
 
-      var assemblies = AssemblyHelper.GetAssemblies().ToList();
-      _perAssemblyProgress = 1.0 / assemblies.Count;
+      var assemblies = AssemblyHelper.GetReferencingAssemblies(typeof(IView)).ToList();
+      _perAssemblyProgress = 1.0 / Math.Max(1, assemblies.Count);
       foreach (var assembly in assemblies)
       {
          Register(assembly);
@@ -177,11 +186,11 @@ public class MvvmService : IMvvmService
                if (viewClasses.Count > 0)
                {
                   foreach (var cls in viewClasses)
-                     RegisterAll(baseType, viewType, cls, viewMode);
+                     RegisterWithImplementations(baseType, viewType, cls, viewMode);
                }
                else
                {
-                  RegisterAll(baseType, viewType, typeof(IDefaultViewClass), viewMode);
+                  RegisterWithImplementations(baseType, viewType, typeof(IDefaultViewClass), viewMode);
                }
             }
 
@@ -190,26 +199,39 @@ public class MvvmService : IMvvmService
       }
    }
 
-   public void RegisterAll(
-       Type baseType
-       , Type linkedType
-       , Type viewClass
-       , Type viewMode
-   )
+   /// <summary>
+   /// Candidate view-model implementations : concrete types from the assemblies
+   /// that reference HLab.Mvvm.Annotations, excluding design-time view models.
+   /// </summary>
+   List<Type>? _candidateTypes;
+   List<Type> CandidateTypes => _candidateTypes ??= AssemblyHelper
+      .GetReferencingAssemblies(typeof(IView))
+      .SelectMany(a => a.GetTypesSafe())
+      .Where(t => !t.IsAbstract && !typeof(IDesignViewModel).IsAssignableFrom(t))
+      .ToList();
+
+   /// <summary>
+   /// Register a view for its declared type, plus the concrete implementations
+   /// of that type : a view declared against a view-model interface or base
+   /// class only reaches the model through the IViewModel&lt;TModel&gt; chain of
+   /// the concrete view models, which must be registered from the
+   /// implementations themselves.
+   /// </summary>
+   void RegisterWithImplementations(Type baseType, Type linkedType, Type viewClass, Type viewMode)
    {
       Register(baseType, linkedType, viewClass, viewMode);
 
-      var basesTypes = AllAssemblies().SelectMany(a => a.GetTypesSafe().Where(baseType.IsAssignableFrom).Where(t => !t.IsAssignableFrom(baseType)).Where(t => !typeof(IDesignViewModel).IsAssignableFrom(t)));
-      var linkedTypes = AllAssemblies().SelectMany(a => a.GetTypesSafe().Where(linkedType.IsAssignableFrom)).ToList();
-
-      foreach (var bt in basesTypes)
-         foreach (var lt in linkedTypes)
-            Register(bt, lt, viewClass, viewMode);
+      foreach (var t in CandidateTypes.Where(t => baseType.IsAssignableFrom(t) && !t.IsAssignableFrom(baseType)))
+         Register(t, linkedType, viewClass, viewMode);
    }
 
    public void Register(Type baseType, Type linkedType, Type viewClass, Type viewMode)
    {
       CheckPlatformRegistered();
+
+      // resolution results may change once a new link is known
+      _linkedTypeCache.Clear();
+
       var type = baseType;
 
       while (true)
@@ -297,12 +319,6 @@ public class MvvmService : IMvvmService
 
       return modelType != null;
    }
-
-   static IEnumerable<Assembly> AllAssemblies()
-   {
-      return AppDomain.CurrentDomain.GetAssemblies();
-   }
-
 
    protected virtual void OnProgress(double progress, string text)
    {
