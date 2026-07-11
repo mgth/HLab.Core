@@ -41,9 +41,11 @@ public static partial class LowLevelMonitorConfiguration
        RedGain = 0x16,
        GreenGain = 0x18,
        BlueGain = 0x1A,
-       RedDrive = 0x52,
-       GreenDrive = 0x54,
-       BlueDrive = 0x56,
+       // MCCS "video black level" — what the Windows high-level API calls Drive.
+       // (0x52 is Active Control, not a drive code.)
+       RedDrive = 0x6C,
+       GreenDrive = 0x6E,
+       BlueDrive = 0x70,
     }
 
 
