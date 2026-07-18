@@ -30,8 +30,8 @@ public abstract class SavableReactiveModel : ReactiveModel, ISavable
     }
 
     // NOTE: intentionally NO parameterless Save() here.
-    // Persistence is provided by extension methods (e.g. PersistencyExtensions.Save(this MonitorsLayout)),
-    // which both write storage and reset the child Saved flags. A parameterless instance Save() on this
-    // base would shadow those extensions at every `x.Save()` call site (instance methods win over
+    // Persistence is provided externally (LittleBigMouse.Plugins.Persistence.LayoutPersistence),
+    // which both writes storage and resets the child Saved flags. A parameterless instance Save() on
+    // this base would shadow any extension method at a `x.Save()` call site (instance methods win over
     // extension methods in overload resolution), silently turning persistence into a no-op.
 }
