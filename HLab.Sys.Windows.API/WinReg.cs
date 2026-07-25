@@ -22,6 +22,7 @@
 */
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32;
@@ -58,24 +59,37 @@ public static partial class WinReg
 
     public static string GetHKeyName(nint hKey)
     {
-        var result = string.Empty;
-
         var status = Wdm.ZwQueryKey(hKey, Wdm.KeyInformationClass.KeyNameInformation, 0, 0, out var needed);
-        if (status != 0xC0000023) return result;
+        if (status != 0xC0000023 /* STATUS_BUFFER_TOO_SMALL */ || needed < sizeof(uint)) return string.Empty;
 
-        var pKni = Marshal.AllocHGlobal(cb: sizeof(uint) + needed + 4 /*paranoia*/);
-        status = Wdm.ZwQueryKey(hKey, Wdm.KeyInformationClass.KeyNameInformation, pKni, needed, out needed);
-        if (status == 0)    // STATUS_SUCCESS
+        var buffer = Marshal.AllocHGlobal(needed);
+        try
         {
-            var bytes = new char[2 + needed + 2];
-            Marshal.Copy(pKni, bytes, 0, needed);
-            // startIndex == 2  skips the NameLength field of the structure (2 chars == 4 bytes)
-            // needed/2         reduces value from bytes to chars
-            //  needed/2 - 2    reduces length to not include the NameLength
-            result = new string(bytes, 2, (needed / 2) - 2);
+            var capacity = needed;
+            status = Wdm.ZwQueryKey(hKey, Wdm.KeyInformationClass.KeyNameInformation, buffer, capacity, out var returned);
+            if (status != 0 /* STATUS_SUCCESS */ || returned < sizeof(uint) || returned > capacity)
+                return string.Empty;
+
+            var bytes = new byte[returned];
+            Marshal.Copy(buffer, bytes, 0, returned);
+            return DecodeKeyNameInformation(bytes);
         }
-        Marshal.FreeHGlobal(pKni);
-        return result;
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    /// <summary>Decode byte-counted KEY_NAME_INFORMATION without unmanaged over-read.</summary>
+    public static string DecodeKeyNameInformation(ReadOnlySpan<byte> buffer)
+    {
+        if (buffer.Length < sizeof(uint)) return string.Empty;
+        var nameLength = BitConverter.ToUInt32(buffer[..sizeof(uint)]);
+        if ((nameLength & 1) != 0 || nameLength > buffer.Length - sizeof(uint))
+            throw new InvalidDataException("Invalid KEY_NAME_INFORMATION byte length.");
+
+        return Encoding.Unicode.GetString(
+            buffer.Slice(sizeof(uint), checked((int)nameLength)));
     }
 
 
