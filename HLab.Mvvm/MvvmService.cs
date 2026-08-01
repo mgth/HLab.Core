@@ -82,15 +82,30 @@ public class MvvmService : IMvvmService
 
    public HelperFactory<IViewHelper> ViewHelperFactory { get; } = new();
 
+   readonly ConcurrentDictionary<Type, byte> _platformRegisteredRuntimeTypes = new();
+
    public Type? GetLinkedType(Type getType, Type viewMode, Type viewClass)
    {
+      var runtimeType = getType;
+
       if (getType.IsConstructedGenericType)
       {
          getType = getType.GetGenericTypeDefinition();
       }
 
-      return _linkedTypeCache.GetOrAdd((getType, viewMode, viewClass),
+      var linked = _linkedTypeCache.GetOrAdd((getType, viewMode, viewClass),
          k => ResolveLinkedType(k.getType, k.viewMode, k.viewClass));
+
+      // Les génériques fermés au runtime (ex : EntityFilterNullable<Country>) ne sont
+      // connus qu'ici : la plateforme doit les enregistrer aussi (WPF résout ses
+      // DataTemplates implicites par type fermé, jamais par définition ouverte).
+      if (linked != null && runtimeType != getType && _platform != null
+          && _platformRegisteredRuntimeTypes.TryAdd(runtimeType, 0))
+      {
+         _platform.Register(runtimeType);
+      }
+
+      return linked;
    }
 
    Type? ResolveLinkedType(Type getType, Type viewMode, Type viewClass)
