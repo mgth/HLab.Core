@@ -122,7 +122,7 @@ public partial class LocalizationService : ILocalizationService, IService
         foreach (var service in _services)
         {
             var value = await service.LocalizeAsync(tag, code, token).ConfigureAwait(false);
-            if (value != null) return value;
+            if (!string.IsNullOrWhiteSpace(value)) return value;
         }
 
         var (result,quality) = SelfLocalized(tag, code);

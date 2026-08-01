@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+	  <Platforms>AnyCPU;x64</Platforms>
+    <Configurations>Debug;Release;DebugRelease</Configurations>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HLab.Core.ReactiveUI\HLab.Core.ReactiveUI.csproj" />
+    <ProjectReference Include="..\HLab.Mvvm.Annotations\HLab.Mvvm.Annotations.csproj" />
+    <ProjectReference Include="..\HLab.Options\HLab.Options.csproj" />
+  </ItemGroup>
+
+</Project>

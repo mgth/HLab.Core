@@ -29,6 +29,7 @@ public static class UiPlatform
     {
         Implementation = implementation;
     }
+    public static void Configure<T>() where T : IUiPlatformImplementation, new() => Configure(new T());
 
     static IUiPlatformImplementation? _implementation;
     static IUiPlatformImplementation Implementation
