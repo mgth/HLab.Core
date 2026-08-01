@@ -44,8 +44,9 @@ public class Bootstrapper(Func<IEnumerable<Bootloader>> getBootloaders) : IBoots
             case BootState.Requeue:
                if (bootloader.LastQueueSize == _queue.Count)
                {
+                  Console.Error.WriteLine($"[Bootstrapper] stalled: {bootloader.Name} requeued with unchanged queue ({_queue.Count} pending: {string.Join(", ", _queue.Select(b => b.Name))})");
                   await bootloader.LoadAsync();
-                  //throw new Exception($"Bootloader {bootloader.Name} is deadlocked");
+                  //throw new Exception($"Bootloader {bootloader.Name} is deadlocked")
                }
                
                bootloader.LastQueueSize = _queue.Count;
