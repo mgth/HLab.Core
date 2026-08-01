@@ -38,12 +38,24 @@ public class MessageBus : IMessagesService
 {
     readonly WeakReferenceMessenger _messenger = new();
 
+    // Enracine les délégués abonnés : le destinataire passé au messenger faible
+    // est le plus souvent une closure générée par le compilateur que personne ne
+    // référence — l'abonnement mourait silencieusement au GC suivant (ex. : la
+    // fenêtre de login ne se fermait jamais sur UserLoggedInMessage).
+    readonly System.Collections.Concurrent.ConcurrentDictionary<Delegate, byte> _keepAlive = new();
+
     public void Publish<T>(T payload) where T : class
         => _messenger.Send(payload);
 
     public void Subscribe<T>(Action<T> action) where T : class
-        => _messenger.Register<T>(action.Target ?? this, (_, m) => action(m));
+    {
+        _keepAlive.TryAdd(action, 0);
+        _messenger.Register<T>(action.Target ?? this, (_, m) => action(m));
+    }
 
     public void Unsubscribe<T>(Action<T> action) where T : class
-        => _messenger.Unregister<T>(action.Target ?? this);
+    {
+        _keepAlive.TryRemove(action, out _);
+        _messenger.Unregister<T>(action.Target ?? this);
+    }
 }
