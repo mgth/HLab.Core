@@ -23,17 +23,27 @@ public abstract class DocumentService : IDocumentService
 
     public async Task OpenDocumentAsync(object? obj, IDocumentPresenter presenter)
     {
-        if (obj is Type t)
+        // Souvent appelée en fire-and-forget : sans ce log une exception
+        // (résolution de vue, DI du view model...) disparaît sans aucun symptôme.
+        try
         {
-            obj = _getter(t);
-        }
+            if (obj is Type t)
+            {
+                obj = _getter(t);
+            }
 
-        if (obj is IView view)
-            await OpenDocumentAsync(view, presenter);
-        else
+            if (obj is IView view)
+                await OpenDocumentAsync(view, presenter);
+            else
+            {
+                var doc = _mvvm.MainContext.GetView(obj, typeof(DefaultViewMode), typeof(IDocumentViewClass));
+                await OpenDocumentAsync(doc, presenter);
+            }
+        }
+        catch (Exception ex)
         {
-            var doc = _mvvm.MainContext.GetView(obj, typeof(DefaultViewMode), typeof(IDocumentViewClass));
-            await OpenDocumentAsync(doc, presenter);
+            Console.Error.WriteLine($"OpenDocument: échec pour {obj?.GetType().Name ?? "null"}: {ex}");
+            throw;
         }
     }
 }
